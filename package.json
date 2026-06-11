@@ -1,0 +1,13 @@
+{
+  "name": "scotch",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Scotch — AI-native architecture design platform. Text-to-design for architecture.",
+  "scripts": {
+    "dev:web": "npm --prefix apps/web run dev",
+    "build:web": "npm --prefix apps/web run build",
+    "lint:web": "npm --prefix apps/web run lint",
+    "dev:api": "cd services/api && .venv\\Scripts\\python -m uvicorn app.main:app --reload --port 8000",
+    "test:api": "cd services/api && .venv\\Scripts\\python -m pytest"
+  }
+}

@@ -1,0 +1,23 @@
+# Node
+node_modules/
+.next/
+out/
+next-env.d.ts
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Environment
+.env
+.env.local
+
+# Local project data (user designs live here, not in git)
+services/api/app/data/*
+!services/api/app/data/.gitkeep
+
+# OS / editor
+.DS_Store
+Thumbs.db
