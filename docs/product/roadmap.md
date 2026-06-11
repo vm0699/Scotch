@@ -31,7 +31,7 @@ Status values: ✅ Done · 🔵 In progress · ⬜ Not started
 |---|---|---|
 | 2.1 Design system | AppShell, TopBar, Sidebar, Button/Card/Panel/Badge; premium white tokens | ✅ |
 | 2.2 Dashboard UI | New Project, Recent Projects, Templates (2BHK, 3BHK Villa, Studio, Small Cafe, Office, Duplex), backend status, settings placeholder | ✅ |
-| 2.3 Workspace UI | CADAM 3-panel: prompt/generate/templates · 2D canvas + 3D tab + zoom · parameters/schedule/exports/warnings | ⬜ |
+| 2.3 Workspace UI | CADAM 3-panel: prompt/generate/templates · 2D canvas + 3D tab + zoom · parameters/schedule/exports/warnings | ✅ |
 | 2.4 Mock ArchitectureProject | Centralized typed mock feeding all panels | ⬜ |
 | 2.5 SVG floor plan renderer | Site boundary, double-line walls, labels+areas, dimensions, door swings, window symbols, north arrow | ⬜ |
 | 2.6 Docs | UI overview, mock structure, limitations | ⬜ |
