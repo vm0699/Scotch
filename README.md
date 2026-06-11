@@ -14,17 +14,26 @@ prompt → requirement parser → ArchitectureProject JSON → validator
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js (App Router) · React · TypeScript · Tailwind CSS · shadcn/ui · SVG 2D · React Three Fiber 3D |
+| Frontend | Next.js 16 (App Router) · React · TypeScript · Tailwind CSS v4 · shadcn/ui · SVG 2D · React Three Fiber 3D (Phase 8) |
 | Backend | Python · FastAPI · Pydantic v2 · local filesystem storage |
-| AI | Provider abstraction: deterministic rule-based (no key needed) / Anthropic / OpenAI-compatible |
+| AI | Provider abstraction: deterministic rule-based (no key needed) / Anthropic / OpenAI-compatible (Phase 9) |
 
 ## Repository Structure
 
 ```
 RARCH/
-  docs/             # product brief, PRD, roadmap (live status), questionnaire
-  apps/web/         # Next.js frontend
-  services/api/     # FastAPI backend
+  docs/                       # product brief, PRD, roadmap (live status), questionnaire
+  apps/web/                   # Next.js frontend
+    src/app/                  #   routes: / (landing), /dashboard, /workspace
+    src/components/           #   layout components (TopBar, status) + shadcn ui/
+    src/features/api/         #   typed backend client + status hook
+  services/api/               # FastAPI backend
+    app/main.py               #   app factory (CORS, routers)
+    app/config.py             #   pydantic-settings (SCOTCH_* env vars)
+    app/api/routes/           #   endpoints (health; projects/generate arrive in Phases 3–5)
+    app/core/                 #   models, validation, generation (arrive in Phases 3–5)
+    app/data/                 #   local project storage (gitignored)
+    tests/                    #   pytest suite
 ```
 
 ## Setup
@@ -32,25 +41,25 @@ RARCH/
 Prerequisites: Node 18+ (tested on 22), Python 3.10+ (tested on 3.13), npm.
 
 ```powershell
-# 1. Frontend dependencies (installed by create-next-app; if cloning fresh:)
+# Frontend dependencies
 cd apps/web
 npm install
 
-# 2. Backend environment
+# Backend environment
 cd services/api
 python -m venv .venv
 .\.venv\Scripts\python -m pip install -r requirements.txt
 
-# 3. Environment variables (optional for now)
+# Environment variables (optional — defaults work locally)
 copy .env.example .env
 ```
 
 ## Running
 
-From the repo root:
+From the repo root, in two terminals:
 
 ```powershell
-npm run dev:api    # FastAPI on http://localhost:8000  (available from Stage 1.2)
+npm run dev:api    # FastAPI on http://localhost:8000
 npm run dev:web    # Next.js on http://localhost:3000
 ```
 
@@ -61,20 +70,34 @@ cd services/api; .\.venv\Scripts\python -m uvicorn app.main:app --reload --port 
 cd apps/web; npm run dev
 ```
 
-Health check (from Stage 1.2): `GET http://localhost:8000/health` → `{"app":"scotch","status":"ok","version":"0.1.0"}`
+Open http://localhost:3000 — the top bar on the dashboard/workspace shows a live backend status indicator (green = online, red = offline).
+
+## API
+
+| Endpoint | Description |
+|---|---|
+| `GET /health` | `{"app":"scotch","status":"ok","version":"0.1.0"}` |
+
+Interactive API docs (FastAPI): http://localhost:8000/docs
 
 ## Testing
 
 ```powershell
-npm run test:api   # backend pytest suite
+npm run test:api     # backend pytest suite
+npm run build:web    # frontend type-check + production build
+npm run lint:web     # frontend lint
 ```
 
 ## Documentation
 
 - [docs/README.md](docs/README.md) — documentation index
-- [docs/product/roadmap.md](docs/product/roadmap.md) — staged roadmap with live status
+- [docs/product/roadmap.md](docs/product/roadmap.md) — Phases 0–20 staged roadmap with live status
 - [docs/product/prd.md](docs/product/prd.md) — product requirements
+- [docs/product/brief.md](docs/product/brief.md) — product brief and vision
 
 ## Current Phase Status
 
-**Phase 1 — Local Working Skeleton MVP: Stages 1.1–1.4 complete** (repository, backend health API, frontend base app, API client with live backend status). Next: Stage 1.5 — Phase 1 documentation pass. See the [roadmap](docs/product/roadmap.md) for the full Phase 0–20 plan.
+**Phase 1 — Local Working Skeleton MVP: COMPLETE.**
+Backend and frontend run locally, `/health` works, the UI reflects live backend status, and landing → dashboard → workspace navigation is in place.
+
+**Next: Phase 2 — CADAM-Like UI Shell MVP** (design system, dashboard UI, three-panel workspace, mock project, SVG floor plan renderer). See the [roadmap](docs/product/roadmap.md).
