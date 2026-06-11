@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { BackendStatusIndicator } from "@/components/layout/backend-status";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
@@ -37,14 +38,11 @@ export function TopBar({ active }: { active?: "/dashboard" | "/workspace" }) {
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-4">
           <span className="hidden text-xs text-muted-foreground sm:block">
             Local project mode
           </span>
-          <span
-            className="size-2 rounded-full bg-muted-foreground/40"
-            title="Backend status — connects in Stage 1.4"
-          />
+          <BackendStatusIndicator />
         </div>
       </div>
     </header>

@@ -18,9 +18,9 @@ Status values: ✅ Done · 🔵 In progress · ⬜ Not started
 | Stage | Scope | Status |
 |---|---|---|
 | 1.1 Repository setup | Verify Node/Python; git init; monorepo (`apps/web` create-next-app TS/Tailwind/App Router + shadcn/ui; `services/api` FastAPI requirements); root README, .env.example, scripts | ✅ |
-| 1.2 Backend health API | `app/main.py`, `config.py`, `api/routes/health.py`; `GET /health` → `{"app":"scotch","status":"ok","version":"0.1.0"}`; CORS; pytest | ⬜ (skipped for now per product owner; required before 1.4) |
+| 1.2 Backend health API | `app/main.py`, `config.py`, `api/routes/health.py`; `GET /health` → `{"app":"scotch","status":"ok","version":"0.1.0"}`; CORS; pytest | ✅ |
 | 1.3 Frontend base app | Landing (name, tagline, Start Local Project), dashboard shell, workspace shell, navigation | ✅ |
-| 1.4 Frontend API client | `src/features/api/client.ts`; typed fetch; backend status indicator with error state | ⬜ |
+| 1.4 Frontend API client | `src/features/api/client.ts`; typed fetch; backend status indicator with error state | ✅ |
 | 1.5 Documentation | README: purpose, stack, structure, run commands, health check, phase status | ⬜ |
 
 **Accept:** both servers run; /health works; landing → dashboard → workspace; README accurate.
