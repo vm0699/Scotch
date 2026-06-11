@@ -77,5 +77,5 @@ npm run test:api   # backend pytest suite
 
 ## Current Phase Status
 
-**Phase 1 — Local Working Skeleton MVP: Stage 1.1 (Repository Setup) complete.**
-Next: Stage 1.2 — Backend Health API. See the [roadmap](docs/product/roadmap.md) for the full Phase 0–20 plan.
+**Phase 1 — Local Working Skeleton MVP: Stages 1.1 (Repository Setup) and 1.3 (Frontend Base App) complete.**
+Stage 1.2 (Backend Health API) was deferred and is required before Stage 1.4 (Frontend API Client). See the [roadmap](docs/product/roadmap.md) for the full Phase 0–20 plan.
