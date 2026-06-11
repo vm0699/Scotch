@@ -25,11 +25,11 @@ Status values: ✅ Done · 🔵 In progress · ⬜ Not started
 
 **Accept:** both servers run; /health works; landing → dashboard → workspace; README accurate.
 
-## Phase 2 — CADAM-Like UI Shell MVP (mock data) — ⬜
+## Phase 2 — CADAM-Like UI Shell MVP (mock data) — 🔵 In progress
 
 | Stage | Scope | Status |
 |---|---|---|
-| 2.1 Design system | AppShell, TopBar, Sidebar, Button/Card/Panel/Badge; premium white tokens | ⬜ |
+| 2.1 Design system | AppShell, TopBar, Sidebar, Button/Card/Panel/Badge; premium white tokens | ✅ |
 | 2.2 Dashboard UI | New Project, Recent Projects, Templates (2BHK, 3BHK Villa, Studio, Small Cafe, Office, Duplex), backend status, settings placeholder | ⬜ |
 | 2.3 Workspace UI | CADAM 3-panel: prompt/generate/templates · 2D canvas + 3D tab + zoom · parameters/schedule/exports/warnings | ⬜ |
 | 2.4 Mock ArchitectureProject | Centralized typed mock feeding all panels | ⬜ |

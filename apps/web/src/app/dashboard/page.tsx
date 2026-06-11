@@ -1,14 +1,40 @@
 import Link from "next/link";
+import { FolderOpen, LayoutGrid, Settings, Shapes } from "lucide-react";
 
-import { TopBar } from "@/components/layout/top-bar";
+import { AppShell } from "@/components/layout/app-shell";
+import { Sidebar } from "@/components/layout/sidebar";
 import { Button } from "@/components/ui/button";
+
+const SIDEBAR_ITEMS = [
+  { label: "Projects", href: "/dashboard", icon: LayoutGrid, active: true },
+  {
+    label: "Templates",
+    href: "/dashboard",
+    icon: Shapes,
+    disabled: true,
+    hint: "Arrives in Stage 2.2",
+  },
+  {
+    label: "Open project",
+    href: "/workspace",
+    icon: FolderOpen,
+  },
+  {
+    label: "Settings",
+    href: "/dashboard",
+    icon: Settings,
+    disabled: true,
+    hint: "Arrives in Phase 9",
+  },
+];
 
 export default function DashboardPage() {
   return (
-    <div className="flex flex-1 flex-col bg-muted/40">
-      <TopBar active="/dashboard" />
-
-      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
+    <AppShell
+      active="/dashboard"
+      sidebar={<Sidebar items={SIDEBAR_ITEMS} footer="Scotch 0.1.0 · local" />}
+    >
+      <div className="mx-auto w-full max-w-6xl px-6 py-10">
         <div className="flex items-end justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Projects</h1>
@@ -36,10 +62,10 @@ export default function DashboardPage() {
           </h2>
           <div className="mt-3 flex h-40 items-center justify-center rounded-xl border border-dashed border-border bg-card text-sm text-muted-foreground">
             Starter templates — 2BHK Apartment, 3BHK Villa, Studio, Small Cafe
-            — arrive with the dashboard UI (Phase 2).
+            — arrive with the dashboard UI (Stage 2.2).
           </div>
         </section>
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }

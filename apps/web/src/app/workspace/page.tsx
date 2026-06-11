@@ -1,43 +1,48 @@
-import { TopBar } from "@/components/layout/top-bar";
-
-function PanelPlaceholder({
-  title,
-  note,
-}: {
-  title: string;
-  note: string;
-}) {
-  return (
-    <div className="flex h-full flex-col rounded-xl border border-border bg-card">
-      <div className="border-b border-border px-4 py-3 text-sm font-medium">
-        {title}
-      </div>
-      <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-muted-foreground">
-        {note}
-      </div>
-    </div>
-  );
-}
+import { AppShell } from "@/components/layout/app-shell";
+import {
+  Panel,
+  PanelBody,
+  PanelEmpty,
+  PanelHeader,
+} from "@/components/layout/panel";
+import { StatusBadge } from "@/components/layout/status-badge";
 
 export default function WorkspacePage() {
   return (
-    <div className="flex h-screen flex-col bg-muted/40">
-      <TopBar active="/workspace" />
+    <AppShell active="/workspace">
+      <div className="grid h-full grid-cols-1 gap-3 p-3 lg:grid-cols-[300px_minmax(0,1fr)_340px]">
+        <Panel>
+          <PanelHeader
+            title="Design Brief"
+            actions={<StatusBadge variant="info">Deterministic</StatusBadge>}
+          />
+          <PanelBody className="flex flex-col">
+            <PanelEmpty>
+              Prompt input, templates, and the Generate button land in Stage
+              2.3.
+            </PanelEmpty>
+          </PanelBody>
+        </Panel>
 
-      <main className="grid min-h-0 flex-1 grid-cols-1 gap-4 p-4 lg:grid-cols-[280px_minmax(0,1fr)_320px]">
-        <PanelPlaceholder
-          title="Prompt"
-          note="Prompt input, templates, and the Generate button land in Phase 2."
-        />
-        <PanelPlaceholder
-          title="Preview"
-          note="2D floor plan canvas and 3D massing tab land in Phase 2."
-        />
-        <PanelPlaceholder
-          title="Parameters"
-          note="Parameter editor, room schedule, exports, and warnings land in Phase 2."
-        />
-      </main>
-    </div>
+        <Panel>
+          <PanelHeader title="Preview" />
+          <PanelBody className="flex flex-col">
+            <PanelEmpty>
+              2D floor plan canvas and 3D massing tab land in Stages 2.3–2.5.
+            </PanelEmpty>
+          </PanelBody>
+        </Panel>
+
+        <Panel>
+          <PanelHeader title="Design Data" />
+          <PanelBody className="flex flex-col">
+            <PanelEmpty>
+              Parameter editor, room schedule, exports, and warnings land in
+              Stage 2.3.
+            </PanelEmpty>
+          </PanelBody>
+        </Panel>
+      </div>
+    </AppShell>
   );
 }
