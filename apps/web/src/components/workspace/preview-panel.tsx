@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { Box, Compass, Maximize2, Minus, PenLine, Plus } from "lucide-react";
 
 import { Panel, PanelHeader } from "@/components/layout/panel";
@@ -10,9 +10,19 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { FloorPlanSvg, planPixelSize } from "@/features/plan/floor-plan-svg";
+import {
+  totalBuiltArea,
+  unitLabel,
+  type ArchitectureProject,
+} from "@/features/project/types";
 import { cn } from "@/lib/utils";
 
 type ViewMode = "2d" | "3d";
+
+const MIN_ZOOM = 0.25;
+const MAX_ZOOM = 3;
+const ZOOM_STEP = 1.25;
 
 const DOT_GRID_STYLE: React.CSSProperties = {
   backgroundImage:
@@ -45,8 +55,53 @@ function ViewTab({
   );
 }
 
-export function PreviewPanel() {
+function EmptyState({
+  icon: Icon,
+  title,
+  body,
+}: {
+  icon: typeof Compass;
+  title: string;
+  body: string;
+}) {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
+      <span className="flex size-12 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+        <Icon className="size-5" />
+      </span>
+      <div>
+        <p className="text-sm font-medium">{title}</p>
+        <p className="mt-1 max-w-60 text-xs leading-5 text-muted-foreground">
+          {body}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export function PreviewPanel({
+  project,
+}: {
+  project: ArchitectureProject | null;
+}) {
   const [view, setView] = useState<ViewMode>("2d");
+  const [zoom, setZoom] = useState(1);
+  const canvasRef = useRef<HTMLDivElement>(null);
+
+  const fitToView = useCallback(() => {
+    if (!project || !canvasRef.current) return;
+    const { width, height } = planPixelSize(project);
+    const box = canvasRef.current.getBoundingClientRect();
+    const fit = Math.min((box.width - 24) / width, (box.height - 24) / height);
+    setZoom(Math.min(Math.max(fit, MIN_ZOOM), MAX_ZOOM));
+  }, [project]);
+
+  // Fit whenever a (new) project arrives.
+  useLayoutEffect(() => {
+    fitToView();
+  }, [fitToView]);
+
+  const plan = project ? planPixelSize(project) : null;
 
   return (
     <Panel>
@@ -65,73 +120,98 @@ export function PreviewPanel() {
         }
         actions={
           <span className="text-[11px] text-muted-foreground/70">
-            Untitled project
+            {project
+              ? `${project.name} · ${project.rooms.length} rooms · ${totalBuiltArea(project)} ${unitLabel(project.units)}²`
+              : "Untitled project"}
           </span>
         }
       />
 
-      <div className="relative min-h-0 flex-1 bg-muted/20" style={DOT_GRID_STYLE}>
+      <div
+        ref={canvasRef}
+        className="relative min-h-[480px] flex-1 bg-muted/20 lg:min-h-0"
+        style={DOT_GRID_STYLE}
+      >
         {view === "2d" ? (
-          <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
-            <span className="flex size-12 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-              <Compass className="size-5" />
-            </span>
-            <div>
-              <p className="text-sm font-medium">No design yet</p>
-              <p className="mt-1 max-w-60 text-xs leading-5 text-muted-foreground">
-                Describe your building in the brief and press Generate. The
-                floor plan renders here.
-              </p>
+          project && plan ? (
+            <div className="absolute inset-0 flex overflow-auto">
+              <FloorPlanSvg
+                project={project}
+                className="m-auto shrink-0"
+                style={{
+                  width: plan.width * zoom,
+                  height: plan.height * zoom,
+                }}
+              />
             </div>
-          </div>
+          ) : (
+            <EmptyState
+              icon={Compass}
+              title="No design yet"
+              body="Describe your building in the brief and press Generate. The floor plan renders here."
+            />
+          )
         ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
-            <span className="flex size-12 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-              <Box className="size-5" />
-            </span>
-            <div>
-              <p className="text-sm font-medium">3D massing</p>
-              <p className="mt-1 max-w-60 text-xs leading-5 text-muted-foreground">
-                Walls and slabs extrude from your plan here in Phase 8.
-              </p>
-            </div>
-          </div>
+          <EmptyState
+            icon={Box}
+            title="3D massing"
+            body="Walls and slabs extrude from your plan here in Phase 8."
+          />
         )}
 
         {/* scale chip */}
         <div className="absolute bottom-3 left-3 rounded-md border border-border bg-card px-2 py-1 font-mono text-[10px] text-muted-foreground shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-          ft · 1 : 100
+          {project ? unitLabel(project.units) : "ft"} · plan
         </div>
 
         {/* zoom cluster */}
         <div className="absolute bottom-3 right-3 flex items-center rounded-lg border border-border bg-card p-0.5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon-sm" disabled>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                disabled={!project || view !== "2d"}
+                onClick={() =>
+                  setZoom((z) => Math.max(z / ZOOM_STEP, MIN_ZOOM))
+                }
+              >
                 <Minus />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="top">Zoom out — wired in Stage 2.5</TooltipContent>
+            <TooltipContent side="top">Zoom out</TooltipContent>
           </Tooltip>
           <span className="min-w-11 text-center font-mono text-[11px] text-muted-foreground">
-            100%
+            {Math.round(zoom * 100)}%
           </span>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon-sm" disabled>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                disabled={!project || view !== "2d"}
+                onClick={() =>
+                  setZoom((z) => Math.min(z * ZOOM_STEP, MAX_ZOOM))
+                }
+              >
                 <Plus />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="top">Zoom in — wired in Stage 2.5</TooltipContent>
+            <TooltipContent side="top">Zoom in</TooltipContent>
           </Tooltip>
           <div className="mx-0.5 h-4 w-px bg-border" />
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon-sm" disabled>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                disabled={!project || view !== "2d"}
+                onClick={fitToView}
+              >
                 <Maximize2 />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="top">Fit to view — wired in Stage 2.5</TooltipContent>
+            <TooltipContent side="top">Fit to view</TooltipContent>
           </Tooltip>
         </div>
       </div>
