@@ -96,8 +96,40 @@ The workspace currently renders a centralized sample — a typed `ArchitecturePr
 | Endpoint | Description |
 |---|---|
 | `GET /health` | `{"app":"scotch","status":"ok","version":"0.1.0"}` |
+| `GET /projects/sample` | Canonical validated 2BHK `ArchitectureProject` (validator advisories merged into `warnings`) |
 
 Interactive API docs (FastAPI): http://localhost:8000/docs
+
+## ArchitectureProject JSON (the universal model)
+
+Defined in [services/api/app/core/models/project.py](services/api/app/core/models/project.py) (Pydantic v2), mirrored one-to-one by [apps/web/src/features/project/types.ts](apps/web/src/features/project/types.ts). Every feature — generation, editing, previews, exports, plugins — reads and writes this shape:
+
+```jsonc
+{
+  "id": "sample-2bhk-east",
+  "name": "2BHK Apartment Concept",
+  "units": "feet",                                   // "feet" | "meters"
+  "site": { "width": 30, "depth": 50, "orientation": "east" },
+  "building": { "type": "residential", "style": "modern minimal", "floors": 1, "floor_height": 10 },
+  "levels": [{ "index": 0, "name": "Ground Floor", "elevation": 0 }],
+  "rooms": [                                          // x/y = top-left on plan; y=0 at entrance edge
+    { "id": "living", "name": "Living Room", "type": "living", "x": 10, "y": 0, "width": 14, "depth": 12, "level": 0 }
+  ],
+  "walls": [],                                        // explicit segments (rooms imply walls until Phase 5+)
+  "doors": [                                          // wall is plan-local: north=top/entrance, south, east, west
+    { "id": "door-main", "room_id": "living", "wall": "north", "offset": 5, "width": 3.5 }
+  ],
+  "windows": [{ "id": "win-living", "room_id": "living", "wall": "north", "offset": 9.5, "width": 4 }],
+  "materials": [],
+  "parameters": [
+    { "key": "site_width", "label": "Site width", "value": 30, "unit": "ft", "category": "site", "editable": true }
+  ],
+  "notes": ["Entrance assumed on the east edge per site orientation."],
+  "warnings": [{ "id": "warn-open-area", "severity": "info", "message": "…" }]
+}
+```
+
+Validation ([services/api/app/core/validation/validator.py](services/api/app/core/validation/validator.py)) enforces unique room ids, rooms inside the site, level references, and opening references/fit — and emits advisory warnings (overlaps, oversized openings, large unbuilt area). Schema constraints (positive dimensions, enum fields) live on the models themselves.
 
 ## Testing
 
@@ -116,6 +148,6 @@ npm run lint:web     # frontend lint
 
 ## Current Phase Status
 
-**Phases 1–2 COMPLETE** — local skeleton (backend + frontend + health), and the CADAM-like UI shell: design system, dashboard with templates, three-panel workspace, mock ArchitectureProject, and the architectural SVG floor plan renderer.
+**Phases 1–3 COMPLETE** — local skeleton, the CADAM-like UI shell with the architectural floor plan renderer, and the universal data model: backend Pydantic schema + reusable validator (22 tests), `GET /projects/sample`, and the frontend rendering backend data with an offline fallback.
 
-**Next: Phase 3 — Universal Architecture Data Model MVP** (backend Pydantic models, reusable validation, sample-project factory + API, frontend switches from mock to backend data). See the [roadmap](docs/product/roadmap.md).
+**Next: Phase 4 — Local Project Storage MVP** (project CRUD on the local filesystem, dashboard lists real projects, workspace loads/saves by id). See the [roadmap](docs/product/roadmap.md).

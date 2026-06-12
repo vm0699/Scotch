@@ -38,16 +38,16 @@ Status values: ✅ Done · 🔵 In progress · ⬜ Not started
 
 **Accept:** presentable CADAM-like shell; mock plan renders; all panels populated.
 
-## Phase 3 — Universal Architecture Data Model MVP — ⬜
+## Phase 3 — Universal Architecture Data Model MVP — ✅ Done
 
 | Stage | Scope | Status |
 |---|---|---|
-| 3.1 Pydantic models | Site, Building, Level, Room, Wall, Door, Window, Material, Parameter, Warning, ArchitectureProject, ExportManifest | ⬜ |
-| 3.2 Frontend TS types | Mirrored in `src/features/project/types.ts` | ⬜ |
-| 3.3 Validation system | Reusable validator: positive dims, valid units, unique room IDs, rooms inside site, level refs, warnings; pytest | ⬜ |
-| 3.4 Sample project factory | Valid 2BHK with rooms/params/doors/windows/warnings | ⬜ |
-| 3.5 Sample API | `GET /projects/sample` | ⬜ |
-| 3.6 Frontend uses backend | Replace mock with API data | ⬜ |
+| 3.1 Pydantic models | Site, Building, Level, Room, Wall, Door, Window, Material, Parameter, Warning, ArchitectureProject, ExportManifest | ✅ |
+| 3.2 Frontend TS types | Mirrored in `src/features/project/types.ts` | ✅ |
+| 3.3 Validation system | Reusable validator: positive dims, valid units, unique room IDs, rooms inside site, level refs, warnings; pytest | ✅ |
+| 3.4 Sample project factory | Valid 2BHK with rooms/params/doors/windows/warnings | ✅ |
+| 3.5 Sample API | `GET /projects/sample` | ✅ |
+| 3.6 Frontend uses backend | Replace mock with API data (bundled mock kept as offline fallback) | ✅ |
 
 **Accept:** schema solid; validation works; sample renders from backend; JSON documented.
 
