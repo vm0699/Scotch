@@ -25,6 +25,12 @@ export interface Building {
   floor_height: number;
 }
 
+export interface Level {
+  index: number;
+  name: string;
+  elevation: number;
+}
+
 export interface Room {
   id: string;
   name: string;
@@ -35,6 +41,17 @@ export interface Room {
   width: number;
   depth: number;
   level: number;
+}
+
+/** Explicit wall segment; optional while rooms imply their own walls. */
+export interface Wall {
+  id: string;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  thickness: number;
+  room_id?: string | null;
 }
 
 export interface Door {
@@ -54,14 +71,24 @@ export interface WindowOpening {
   width: number;
 }
 
+export interface Material {
+  id: string;
+  name: string;
+  /** What the material applies to, e.g. wall, floor, roof, glass. */
+  target: string;
+  finish?: string | null;
+}
+
 export interface Parameter {
   key: string;
   label: string;
   value: string | number;
-  unit?: string;
+  unit?: string | null;
   category: "site" | "building" | "room";
   editable: boolean;
-  target_id?: string;
+  target_id?: string | null;
+  min?: number | null;
+  max?: number | null;
 }
 
 export interface ProjectWarning {
@@ -76,12 +103,22 @@ export interface ArchitectureProject {
   units: Units;
   site: Site;
   building: Building;
+  levels: Level[];
   rooms: Room[];
+  walls: Wall[];
   doors: Door[];
   windows: WindowOpening[];
+  materials: Material[];
   parameters: Parameter[];
   notes: string[];
   warnings: ProjectWarning[];
+}
+
+export interface ExportManifest {
+  filename: string;
+  format: string;
+  path: string;
+  created_at: string;
 }
 
 export function roomArea(room: Room): number {

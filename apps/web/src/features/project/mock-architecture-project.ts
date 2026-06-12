@@ -27,6 +27,9 @@ export const MOCK_ARCHITECTURE_PROJECT: ArchitectureProject = {
     floors: 1,
     floor_height: 10,
   },
+  levels: [{ index: 0, name: "Ground Floor", elevation: 0 }],
+  walls: [],
+  materials: [],
   rooms: [
     { id: "parking", name: "Parking", type: "parking", x: 0, y: 0, width: 10, depth: 15, level: 0 },
     { id: "living", name: "Living Room", type: "living", x: 10, y: 0, width: 14, depth: 12, level: 0 },
