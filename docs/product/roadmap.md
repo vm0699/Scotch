@@ -65,16 +65,16 @@ Status values: ✅ Done · 🔵 In progress · ⬜ Not started
 
 **Accept:** full CRUD + persistence across restart; pytest for store + routes.
 
-## Phase 5 — Deterministic Text-to-Floorplan MVP — ⬜
+## Phase 5 — Deterministic Text-to-Floorplan MVP — ✅ Done
 
 | Stage | Scope | Status |
 |---|---|---|
-| 5.1 Requirement parser | `core/architecture/requirement_parser.py`: site, orientation, type, bedrooms, baths, rooms, floors, style, parking, balcony; smart defaults + assumption warnings | ⬜ |
-| 5.2 Defaults library | `defaults.py`: living 12x14, kitchen 8x10, bedroom 11x12, master 12x13, bath 5x8, balcony 5x10, parking 10x15, dining 8x10, office 8x10, storage 5x6, cafe seating variable | ⬜ |
-| 5.3 Layout generator | `floorplan_generator.py`: zoning rules, inside-site, warnings; residential + small cafe | ⬜ |
-| 5.4 Generate API | `POST /generate/from-prompt` → `{project, summary, warnings}` | ⬜ |
-| 5.5 Frontend wiring | Generate → plan/schedule/params/warnings + auto-save | ⬜ |
-| 5.6 Test prompt set | 2BHK 30x50, studio 20x30, 3BHK villa 40x60, cafe 25x40, office 50x80 (graceful fallback) | ⬜ |
+| 5.1 Requirement parser | `core/architecture/requirement_parser.py`: site, orientation, type, bedrooms, baths, rooms, floors, style, parking, balcony; smart defaults + assumption warnings | ✅ |
+| 5.2 Defaults library | `defaults.py`: locked room-size library (living 14x12, kitchen 8x10, bedroom 11x12, master 12x13, bath 5x8, balcony 6x10, parking 10x15, dining 8x10, study 8x10, storage 5x6, cafe seating variable) | ✅ |
+| 5.3 Layout generator | `floorplan_generator.py`: zoned band packing (public/service/private), width-wrap, clamp + depth-compression warnings, derived doors/windows; residential + cafe + office fallback | ✅ |
+| 5.4 Generate API | `POST /generate/from-prompt` → `{project, summary, warnings}`, validated + advisories merged | ✅ |
+| 5.5 Frontend wiring | Generate runs real generation from the prompt, updates all panels, auto-saves to the open project, shows the summary | ✅ |
+| 5.6 Test prompt set | All 5 spec prompts valid (office via graceful fallback); zoning, doors, compression, save-flow — 28 cases | ✅ |
 
 **Accept:** prompt → valid plan with no AI key; panels update; persists; logic documented.
 

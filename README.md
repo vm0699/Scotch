@@ -102,6 +102,7 @@ The workspace currently renders a centralized sample — a typed `ArchitecturePr
 | `GET /projects/{id}` | Load a stored project |
 | `PATCH /projects/{id}` | Update name/prompt/design data (design is validated; 422 with errors if invalid) |
 | `DELETE /projects/{id}` | Delete the project and its exports |
+| `POST /generate/from-prompt` | `{prompt}` → `{project, summary, warnings}` — deterministic prompt-to-floorplan, no AI key needed |
 
 Interactive API docs (FastAPI): http://localhost:8000/docs
 
@@ -149,6 +150,16 @@ Each `project.json` is a `StoredProject` envelope: `{id, name, prompt, created_a
 
 **Cloud open door:** all access goes through the `ProjectStore` interface ([base.py](services/api/app/core/storage/base.py)) with an explicit `user_id` on every call (today always `local-user`). The backend is chosen by `SCOTCH_STORAGE_BACKEND` via [factory.py](services/api/app/core/storage/factory.py) — a cloud implementation (S3/Supabase/database, Phase 18) is a new class and a settings change; no API or frontend restructuring.
 
+## Deterministic Generation (Phase 5)
+
+Prompt → plan with **no AI key**, in three steps under `services/api/app/core/architecture/`:
+
+1. **[requirement_parser.py](services/api/app/core/architecture/requirement_parser.py)** — regex/keyword extraction of site size, orientation, building kind (apartment / villa / studio / duplex / cafe / office), bedrooms, bathrooms, floors, style, and parking/balcony/dining/study/storage flags. Missing values get smart defaults (30×50 ft, east-facing, 2BHK…) and every default is recorded as an assumption.
+2. **[defaults.py](services/api/app/core/architecture/defaults.py)** — the locked room-size library (living 14×12, kitchen 8×10, master 12×13, bath 5×8…).
+3. **[floorplan_generator.py](services/api/app/core/architecture/floorplan_generator.py)** — zoned band packing along the site depth: public entrance band (parking, living/seating, balcony), service band (kitchen, dining, common bath, study, storage), private bands (bedrooms with interleaved attached baths). Rooms wrap to new bands when site width runs out; oversized rooms are clamped and deep programs compressed — always with a visible warning. Doors (entrance centered on the entry room) and perimeter windows are derived from the placed geometry. Cafe gets its own program; office prompts fall back to a generic open plan with an info warning until office logic lands.
+
+Assumptions surface as info warnings in the UI; the result is validated before it leaves the API and saved to the open project.
+
 ## Testing
 
 ```powershell
@@ -166,6 +177,6 @@ npm run lint:web     # frontend lint
 
 ## Current Phase Status
 
-**Phases 1–4 COMPLETE** — local skeleton, the CADAM-like UI shell with the architectural floor plan renderer, the universal data model with validation, and local-first project storage: full CRUD API behind a cloud-ready `ProjectStore` interface, real dashboard project listing with create/delete, and a workspace that loads, saves, and renames projects (35 backend tests).
+**Phases 1–5 COMPLETE** — local skeleton, CADAM-like UI shell with the architectural floor plan renderer, universal data model with validation, cloud-ready local project storage, and **working prompt-to-floorplan generation with no AI key** (63 backend tests).
 
-**Next: Phase 5 — Deterministic Text-to-Floorplan MVP** (requirement parser, room defaults, rule-based layout generator, `POST /generate/from-prompt`, frontend wiring). See the [roadmap](docs/product/roadmap.md).
+**Next: Phase 6 — Editable Parameters & Regeneration MVP** (parameter editing in the panel and on-canvas, room selection, live preview updates, `POST /generate/regenerate`). See the [roadmap](docs/product/roadmap.md).
