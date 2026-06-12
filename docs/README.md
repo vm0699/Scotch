@@ -6,6 +6,7 @@ Scotch is an AI-native architecture design platform: text-to-design for architec
 
 | Document | Purpose |
 |---|---|
+| [HANDOFF.md](HANDOFF.md) | **Next-session handoff: implement Phases 7–9** (state, design intent, gotchas) |
 | [product/brief.md](product/brief.md) | Full product brief: vision, pipeline, tool targets, completion target |
 | [product/prd.md](product/prd.md) | Product Requirement Document — locked MVP requirements |
 | [product/questionnaire.md](product/questionnaire.md) | Phase 0 questionnaire — decisions of record (24 headings) |
