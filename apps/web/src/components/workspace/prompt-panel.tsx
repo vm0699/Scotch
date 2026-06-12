@@ -136,8 +136,8 @@ export function PromptPanel({
             )}
           >
             <Info className="mt-px size-3 shrink-0" />
-            The generation engine arrives in Phase 5 — the interface is wired
-            and waiting.
+            Showing the sample 2BHK design — the prompt-driven engine replaces
+            it in Phase 5.
           </div>
         </PanelSection>
       </PanelBody>

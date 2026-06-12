@@ -5,7 +5,9 @@ import {
   FileBox,
   FileCode2,
   FileImage,
+  Info,
   ShieldCheck,
+  TriangleAlert,
 } from "lucide-react";
 
 import {
@@ -20,16 +22,21 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  formatRoomSize,
+  roomArea,
+  totalBuiltArea,
+  unitLabel,
+  type ArchitectureProject,
+  type ProjectWarning,
+} from "@/features/project/types";
+import { cn } from "@/lib/utils";
 
 function GhostRow({ label, width }: { label: string; width: string }) {
   return (
     <div className="flex items-center justify-between py-1.5">
       <span className="text-xs text-muted-foreground/60">{label}</span>
-      <span
-        className="h-5 rounded-md bg-muted"
-        style={{ width }}
-        aria-hidden
-      />
+      <span className="h-5 rounded-md bg-muted" style={{ width }} aria-hidden />
     </div>
   );
 }
@@ -41,43 +48,132 @@ const EXPORT_FORMATS = [
   { label: "DXF", icon: FileBox },
 ] as const;
 
-export function DataPanel() {
+const WARNING_STYLES = {
+  info: { icon: Info, className: "text-muted-foreground" },
+  warning: { icon: TriangleAlert, className: "text-amber-600" },
+  error: { icon: TriangleAlert, className: "text-red-600" },
+} as const;
+
+function WarningRow({ warning }: { warning: ProjectWarning }) {
+  const style = WARNING_STYLES[warning.severity];
+  return (
+    <li className="flex items-start gap-2.5 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+      <style.icon className={cn("mt-0.5 size-3.5 shrink-0", style.className)} />
+      <p className="text-xs leading-5 text-foreground/80">{warning.message}</p>
+    </li>
+  );
+}
+
+function ParameterRows({ project }: { project: ArchitectureProject }) {
+  return (
+    <div className="divide-y divide-border/60">
+      {project.parameters.map((param) => (
+        <div
+          key={param.key}
+          className="flex items-center justify-between gap-3 py-1.5"
+        >
+          <span className="text-xs text-muted-foreground">{param.label}</span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs tabular-nums">
+                {param.value}
+                {param.unit && (
+                  <span className="text-muted-foreground/70">{param.unit}</span>
+                )}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="left">Editable in Phase 6</TooltipContent>
+          </Tooltip>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RoomSchedule({ project }: { project: ArchitectureProject }) {
+  const unit = unitLabel(project.units);
+  return (
+    <div className="overflow-hidden rounded-lg border border-border">
+      <div className="grid grid-cols-[1fr_auto_auto] gap-3 border-b border-border bg-muted/50 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+        <span>Room</span>
+        <span className="w-14 text-right">Size</span>
+        <span className="w-14 text-right">Area</span>
+      </div>
+      {project.rooms.map((room) => (
+        <div
+          key={room.id}
+          className="grid grid-cols-[1fr_auto_auto] gap-3 border-b border-border/60 px-3 py-1.5 text-xs last:border-b-0"
+        >
+          <span className="truncate">{room.name}</span>
+          <span className="w-14 text-right tabular-nums text-muted-foreground">
+            {formatRoomSize(room)}
+          </span>
+          <span className="w-14 text-right tabular-nums text-muted-foreground">
+            {roomArea(room)} {unit}²
+          </span>
+        </div>
+      ))}
+      <div className="grid grid-cols-[1fr_auto] gap-3 border-t border-border bg-muted/30 px-3 py-1.5 text-xs font-medium">
+        <span>Built-up area</span>
+        <span className="tabular-nums">
+          {totalBuiltArea(project)} {unit}²
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export function DataPanel({
+  project,
+}: {
+  project: ArchitectureProject | null;
+}) {
   return (
     <Panel>
       <PanelHeader title="Design Data" />
       <PanelBody>
         <PanelSection title="Parameters">
-          <div className="divide-y divide-border/60">
-            <GhostRow label="Site width" width="72px" />
-            <GhostRow label="Site depth" width="72px" />
-            <GhostRow label="Orientation" width="88px" />
-            <GhostRow label="Floors" width="56px" />
-          </div>
-          <p className="mt-2.5 text-[11px] leading-4 text-muted-foreground/70">
-            Generate a design to edit its parameters — here and directly on
-            the plan.
-          </p>
+          {project ? (
+            <ParameterRows project={project} />
+          ) : (
+            <>
+              <div className="divide-y divide-border/60">
+                <GhostRow label="Site width" width="72px" />
+                <GhostRow label="Site depth" width="72px" />
+                <GhostRow label="Orientation" width="88px" />
+                <GhostRow label="Floors" width="56px" />
+              </div>
+              <p className="mt-2.5 text-[11px] leading-4 text-muted-foreground/70">
+                Generate a design to edit its parameters — here and directly
+                on the plan.
+              </p>
+            </>
+          )}
         </PanelSection>
 
         <PanelSection title="Room Schedule">
-          <div className="overflow-hidden rounded-lg border border-border">
-            <div className="grid grid-cols-[1fr_auto_auto] gap-3 border-b border-border bg-muted/50 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-              <span>Room</span>
-              <span>Size</span>
-              <span>Area</span>
-            </div>
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="grid grid-cols-[1fr_auto_auto] gap-3 border-b border-border/60 px-3 py-2 last:border-b-0"
-                aria-hidden
-              >
-                <span className="h-3.5 w-20 rounded bg-muted" />
-                <span className="h-3.5 w-12 rounded bg-muted" />
-                <span className="h-3.5 w-10 rounded bg-muted" />
+          {project ? (
+            <RoomSchedule project={project} />
+          ) : (
+            <div className="overflow-hidden rounded-lg border border-border">
+              <div className="grid grid-cols-[1fr_auto_auto] gap-3 border-b border-border bg-muted/50 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                <span>Room</span>
+                <span>Size</span>
+                <span>Area</span>
               </div>
-            ))}
-          </div>
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="grid grid-cols-[1fr_auto_auto] gap-3 border-b border-border/60 px-3 py-2 last:border-b-0"
+                  aria-hidden
+                >
+                  <span className="h-3.5 w-20 rounded bg-muted" />
+                  <span className="h-3.5 w-12 rounded bg-muted" />
+                  <span className="h-3.5 w-10 rounded bg-muted" />
+                </div>
+              ))}
+            </div>
+          )}
         </PanelSection>
 
         <PanelSection title="Exports">
@@ -97,19 +193,49 @@ export function DataPanel() {
                     </Button>
                   </span>
                 </TooltipTrigger>
-                <TooltipContent side="top">Exports arrive in Phase 7</TooltipContent>
+                <TooltipContent side="top">
+                  Exports arrive in Phase 7
+                </TooltipContent>
               </Tooltip>
             ))}
           </div>
         </PanelSection>
 
         <PanelSection title="Warnings">
-          <div className="flex items-center gap-2.5 rounded-lg border border-border bg-muted/40 px-3 py-2.5">
-            <ShieldCheck className="size-4 text-muted-foreground" />
-            <p className="text-xs leading-5 text-muted-foreground">
-              Design checks run after generation.
-            </p>
-          </div>
+          {project ? (
+            <>
+              <ul className="flex flex-col gap-2">
+                {project.warnings.map((warning) => (
+                  <WarningRow key={warning.id} warning={warning} />
+                ))}
+              </ul>
+              {project.notes.length > 0 && (
+                <div className="mt-3">
+                  <h4 className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+                    Assumptions
+                  </h4>
+                  <ul className="mt-1.5 flex flex-col gap-1">
+                    {project.notes.map((note) => (
+                      <li
+                        key={note}
+                        className="flex items-start gap-2 text-[11px] leading-4 text-muted-foreground"
+                      >
+                        <span className="mt-1.5 size-1 shrink-0 rounded-full bg-muted-foreground/40" />
+                        {note}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex items-center gap-2.5 rounded-lg border border-border bg-muted/40 px-3 py-2.5">
+              <ShieldCheck className="size-4 text-muted-foreground" />
+              <p className="text-xs leading-5 text-muted-foreground">
+                Design checks run after generation.
+              </p>
+            </div>
+          )}
         </PanelSection>
       </PanelBody>
     </Panel>

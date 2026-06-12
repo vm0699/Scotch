@@ -5,9 +5,17 @@ import { useState } from "react";
 import { DataPanel } from "@/components/workspace/data-panel";
 import { PreviewPanel } from "@/components/workspace/preview-panel";
 import { PromptPanel } from "@/components/workspace/prompt-panel";
+import { MOCK_ARCHITECTURE_PROJECT } from "@/features/project/mock-architecture-project";
+import type { ArchitectureProject } from "@/features/project/types";
 import { PROJECT_TEMPLATES } from "@/features/templates/templates";
 
-export function Workspace({ initialTemplateId }: { initialTemplateId?: string }) {
+export function Workspace({
+  initialTemplateId,
+  initialProjectId,
+}: {
+  initialTemplateId?: string;
+  initialProjectId?: string;
+}) {
   const initialTemplate = PROJECT_TEMPLATES.find(
     (t) => t.id === initialTemplateId,
   );
@@ -15,6 +23,10 @@ export function Workspace({ initialTemplateId }: { initialTemplateId?: string })
     initialTemplate?.id,
   );
   const [prompt, setPrompt] = useState(initialTemplate?.prompt ?? "");
+  // Opening a saved project loads the sample design until storage lands (Phase 4).
+  const [project, setProject] = useState<ArchitectureProject | null>(
+    initialProjectId ? MOCK_ARCHITECTURE_PROJECT : null,
+  );
 
   function handleTemplateChange(id: string) {
     setTemplateId(id);
@@ -25,7 +37,8 @@ export function Workspace({ initialTemplateId }: { initialTemplateId?: string })
   }
 
   function handleGenerate() {
-    // Wired to POST /generate/from-prompt in Phase 5.
+    // Loads the sample project; replaced by POST /generate/from-prompt in Phase 5.
+    setProject(MOCK_ARCHITECTURE_PROJECT);
   }
 
   return (
@@ -37,8 +50,8 @@ export function Workspace({ initialTemplateId }: { initialTemplateId?: string })
         onTemplateChange={handleTemplateChange}
         onGenerate={handleGenerate}
       />
-      <PreviewPanel />
-      <DataPanel />
+      <PreviewPanel project={project} />
+      <DataPanel project={project} />
     </div>
   );
 }

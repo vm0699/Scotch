@@ -4,13 +4,13 @@ import { Workspace } from "@/components/workspace/workspace";
 export default async function WorkspacePage({
   searchParams,
 }: {
-  searchParams: Promise<{ template?: string }>;
+  searchParams: Promise<{ template?: string; project?: string }>;
 }) {
-  const { template } = await searchParams;
+  const { template, project } = await searchParams;
 
   return (
     <AppShell active="/workspace">
-      <Workspace initialTemplateId={template} />
+      <Workspace initialTemplateId={template} initialProjectId={project} />
     </AppShell>
   );
 }

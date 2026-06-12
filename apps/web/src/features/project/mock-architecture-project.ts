@@ -1,0 +1,81 @@
+import type { ArchitectureProject } from "./types";
+
+/**
+ * Sample 2BHK ArchitectureProject used by the workspace until the backend
+ * generator lands (Phases 3–5). Geometry is a coherent single-floor layout
+ * on a 30 × 50 ft east-facing site: parking and living at the entrance,
+ * kitchen behind the living zone, bedrooms in the private rear zone, and
+ * the last 15 ft of the plot left open.
+ *
+ * Plan coordinates: x runs across the 30 ft site width, y runs along the
+ * 50 ft depth with y = 0 at the entrance edge. Door/window `wall` values are
+ * plan-local: north = top edge (entrance side), south = bottom, west = left,
+ * east = right.
+ */
+export const MOCK_ARCHITECTURE_PROJECT: ArchitectureProject = {
+  id: "mock-2bhk-east",
+  name: "2BHK Apartment Concept",
+  units: "feet",
+  site: {
+    width: 30,
+    depth: 50,
+    orientation: "east",
+  },
+  building: {
+    type: "residential",
+    style: "modern minimal",
+    floors: 1,
+    floor_height: 10,
+  },
+  rooms: [
+    { id: "parking", name: "Parking", type: "parking", x: 0, y: 0, width: 10, depth: 15, level: 0 },
+    { id: "living", name: "Living Room", type: "living", x: 10, y: 0, width: 14, depth: 12, level: 0 },
+    { id: "balcony", name: "Balcony", type: "balcony", x: 24, y: 0, width: 6, depth: 10, level: 0 },
+    { id: "kitchen", name: "Kitchen", type: "kitchen", x: 10, y: 12, width: 8, depth: 10, level: 0 },
+    { id: "bath-1", name: "Common Bath", type: "bathroom", x: 18, y: 12, width: 5, depth: 8, level: 0 },
+    { id: "bed-master", name: "Master Bedroom", type: "bedroom", x: 0, y: 22, width: 12, depth: 13, level: 0 },
+    { id: "bath-2", name: "Attached Bath", type: "bathroom", x: 12, y: 22, width: 5, depth: 8, level: 0 },
+    { id: "bed-2", name: "Bedroom 2", type: "bedroom", x: 17, y: 22, width: 11, depth: 12, level: 0 },
+  ],
+  doors: [
+    { id: "door-main", room_id: "living", wall: "north", offset: 5, width: 3.5 },
+    { id: "door-kitchen", room_id: "kitchen", wall: "north", offset: 2.5, width: 3 },
+    { id: "door-bath-1", room_id: "bath-1", wall: "north", offset: 1, width: 2.5 },
+    { id: "door-bed-master", room_id: "bed-master", wall: "north", offset: 8.5, width: 3 },
+    { id: "door-bath-2", room_id: "bath-2", wall: "north", offset: 1.25, width: 2.5 },
+    { id: "door-bed-2", room_id: "bed-2", wall: "north", offset: 4, width: 3 },
+    { id: "door-balcony", room_id: "balcony", wall: "west", offset: 3.5, width: 3 },
+  ],
+  windows: [
+    { id: "win-living", room_id: "living", wall: "north", offset: 9.5, width: 4 },
+    { id: "win-kitchen", room_id: "kitchen", wall: "west", offset: 3.5, width: 3 },
+    { id: "win-bed-master-1", room_id: "bed-master", wall: "south", offset: 4, width: 4 },
+    { id: "win-bed-master-2", room_id: "bed-master", wall: "west", offset: 4.5, width: 4 },
+    { id: "win-bed-2", room_id: "bed-2", wall: "south", offset: 3.5, width: 4 },
+    { id: "win-bath-1", room_id: "bath-1", wall: "east", offset: 3, width: 1.5 },
+  ],
+  parameters: [
+    { key: "site_width", label: "Site width", value: 30, unit: "ft", category: "site", editable: true },
+    { key: "site_depth", label: "Site depth", value: 50, unit: "ft", category: "site", editable: true },
+    { key: "orientation", label: "Orientation", value: "east", category: "site", editable: true },
+    { key: "floors", label: "Floors", value: 1, category: "building", editable: true },
+    { key: "floor_height", label: "Floor height", value: 10, unit: "ft", category: "building", editable: true },
+    { key: "style", label: "Style", value: "modern minimal", category: "building", editable: true },
+  ],
+  notes: [
+    "Entrance assumed on the east edge per site orientation.",
+    "Rear 15 ft of the plot kept unbuilt for garden or expansion.",
+  ],
+  warnings: [
+    {
+      id: "warn-rear-open",
+      severity: "info",
+      message: "Rear 15 ft of the site is unallocated — consider a garden, utility yard, or future expansion.",
+    },
+    {
+      id: "warn-bath-distance",
+      severity: "warning",
+      message: "Common bath is 10 ft from Bedroom 2 across the corridor — acceptable, not ideal.",
+    },
+  ],
+};
