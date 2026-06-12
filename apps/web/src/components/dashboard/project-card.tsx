@@ -1,28 +1,55 @@
+"use client";
+
 import Link from "next/link";
-import { Building2 } from "lucide-react";
+import { Building2, Trash2 } from "lucide-react";
 
-import type { MockProjectSummary } from "@/features/project/mock-projects";
+import { Button } from "@/components/ui/button";
+import type { ProjectSummary } from "@/features/api/client";
+import { formatRelativeTime } from "@/lib/format";
 
-export function ProjectCard({ project }: { project: MockProjectSummary }) {
+export function ProjectCard({
+  project,
+  onDelete,
+}: {
+  project: ProjectSummary;
+  onDelete: (project: ProjectSummary) => void;
+}) {
+  const meta = [
+    project.site_label,
+    project.room_count > 0 ? `${project.room_count} rooms` : "no design yet",
+    `edited ${formatRelativeTime(project.updated_at)}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
-    <Link
-      href={`/workspace?project=${project.id}`}
-      className="group flex items-start gap-3.5 rounded-xl border border-border bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all hover:border-muted-foreground/30 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
-    >
+    <div className="group relative flex items-start gap-3.5 rounded-xl border border-border bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all hover:border-muted-foreground/30 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
       <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/50 text-muted-foreground transition-colors group-hover:text-foreground">
         <Building2 className="size-4" />
       </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-medium tracking-tight">
+      <Link
+        href={`/workspace?project=${project.id}`}
+        className="min-w-0 flex-1 after:absolute after:inset-0"
+      >
+        <span className="block truncate pr-6 text-sm font-medium tracking-tight">
           {project.name}
         </span>
         <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-          {project.promptSummary}
+          {project.prompt || "No prompt yet"}
         </span>
         <span className="mt-2 block text-xs text-muted-foreground/80">
-          {project.siteSize} · {project.roomCount} rooms · {project.updatedLabel}
+          {meta}
         </span>
-      </span>
-    </Link>
+      </Link>
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        aria-label={`Delete ${project.name}`}
+        className="relative z-10 shrink-0 text-muted-foreground/50 opacity-0 transition-opacity hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
+        onClick={() => onDelete(project)}
+      >
+        <Trash2 />
+      </Button>
+    </div>
   );
 }

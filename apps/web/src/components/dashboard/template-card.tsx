@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { Badge } from "@/components/ui/badge";
 import type { ProjectTemplate } from "@/features/templates/templates";
 
@@ -36,11 +34,18 @@ function TemplateThumbnail({ template }: { template: ProjectTemplate }) {
   );
 }
 
-export function TemplateCard({ template }: { template: ProjectTemplate }) {
+export function TemplateCard({
+  template,
+  onSelect,
+}: {
+  template: ProjectTemplate;
+  onSelect: (template: ProjectTemplate) => void;
+}) {
   return (
-    <Link
-      href={`/workspace?template=${template.id}`}
-      className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all hover:border-muted-foreground/30 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
+    <button
+      type="button"
+      onClick={() => onSelect(template)}
+      className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card text-left shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all hover:border-muted-foreground/30 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
     >
       <div className="aspect-[10/6] border-b border-border bg-muted/30 p-3">
         <TemplateThumbnail template={template} />
@@ -65,6 +70,6 @@ export function TemplateCard({ template }: { template: ProjectTemplate }) {
           ))}
         </div>
       </div>
-    </Link>
+    </button>
   );
 }
