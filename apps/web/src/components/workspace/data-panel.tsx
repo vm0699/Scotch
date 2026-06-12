@@ -16,12 +16,15 @@ import {
   PanelHeader,
   PanelSection,
 } from "@/components/layout/panel";
+import { ParameterEditor } from "@/components/workspace/parameter-editor";
+import { RoomEditor } from "@/components/workspace/room-editor";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { ParameterChange } from "@/features/api/client";
 import {
   formatRoomSize,
   roomArea,
@@ -64,33 +67,15 @@ function WarningRow({ warning }: { warning: ProjectWarning }) {
   );
 }
 
-function ParameterRows({ project }: { project: ArchitectureProject }) {
-  return (
-    <div className="divide-y divide-border/60">
-      {project.parameters.map((param) => (
-        <div
-          key={param.key}
-          className="flex items-center justify-between gap-3 py-1.5"
-        >
-          <span className="text-xs text-muted-foreground">{param.label}</span>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs tabular-nums">
-                {param.value}
-                {param.unit && (
-                  <span className="text-muted-foreground/70">{param.unit}</span>
-                )}
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="left">Editable in Phase 6</TooltipContent>
-          </Tooltip>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function RoomSchedule({ project }: { project: ArchitectureProject }) {
+function RoomSchedule({
+  project,
+  selectedRoomId,
+  onSelectRoom,
+}: {
+  project: ArchitectureProject;
+  selectedRoomId: string | null;
+  onSelectRoom: (roomId: string | null) => void;
+}) {
   const unit = unitLabel(project.units);
   return (
     <div className="overflow-hidden rounded-lg border border-border">
@@ -100,9 +85,18 @@ function RoomSchedule({ project }: { project: ArchitectureProject }) {
         <span className="w-14 text-right">Area</span>
       </div>
       {project.rooms.map((room) => (
-        <div
+        <button
           key={room.id}
-          className="grid grid-cols-[1fr_auto_auto] gap-3 border-b border-border/60 px-3 py-1.5 text-xs last:border-b-0"
+          type="button"
+          onClick={() =>
+            onSelectRoom(room.id === selectedRoomId ? null : room.id)
+          }
+          className={cn(
+            "grid w-full grid-cols-[1fr_auto_auto] gap-3 border-b border-border/60 px-3 py-1.5 text-left text-xs transition-colors last:border-b-0",
+            room.id === selectedRoomId
+              ? "bg-sky-50 text-foreground"
+              : "hover:bg-muted/50",
+          )}
         >
           <span className="truncate">{room.name}</span>
           <span className="w-14 text-right tabular-nums text-muted-foreground">
@@ -111,7 +105,7 @@ function RoomSchedule({ project }: { project: ArchitectureProject }) {
           <span className="w-14 text-right tabular-nums text-muted-foreground">
             {roomArea(room)} {unit}²
           </span>
-        </div>
+        </button>
       ))}
       <div className="grid grid-cols-[1fr_auto] gap-3 border-t border-border bg-muted/30 px-3 py-1.5 text-xs font-medium">
         <span>Built-up area</span>
@@ -125,16 +119,49 @@ function RoomSchedule({ project }: { project: ArchitectureProject }) {
 
 export function DataPanel({
   project,
+  selectedRoomId,
+  onSelectRoom,
+  editBusy,
+  onApplyChanges,
 }: {
   project: ArchitectureProject | null;
+  selectedRoomId: string | null;
+  onSelectRoom: (roomId: string | null) => void;
+  editBusy: boolean;
+  onApplyChanges: (changes: ParameterChange[]) => void;
 }) {
+  const selectedRoom =
+    project?.rooms.find((r) => r.id === selectedRoomId) ?? null;
+
   return (
     <Panel>
       <PanelHeader title="Design Data" />
       <PanelBody>
+        {project && (
+          <PanelSection title="Selection">
+            {selectedRoom ? (
+              <RoomEditor
+                room={selectedRoom}
+                units={project.units}
+                busy={editBusy}
+                onApply={onApplyChanges}
+              />
+            ) : (
+              <p className="text-[11px] leading-4 text-muted-foreground/70">
+                Click a room on the plan to edit its name and dimensions —
+                here or right on the drawing.
+              </p>
+            )}
+          </PanelSection>
+        )}
+
         <PanelSection title="Parameters">
           {project ? (
-            <ParameterRows project={project} />
+            <ParameterEditor
+              project={project}
+              busy={editBusy}
+              onApply={onApplyChanges}
+            />
           ) : (
             <>
               <div className="divide-y divide-border/60">
@@ -153,7 +180,11 @@ export function DataPanel({
 
         <PanelSection title="Room Schedule">
           {project ? (
-            <RoomSchedule project={project} />
+            <RoomSchedule
+              project={project}
+              selectedRoomId={selectedRoomId}
+              onSelectRoom={onSelectRoom}
+            />
           ) : (
             <div className="overflow-hidden rounded-lg border border-border">
               <div className="grid grid-cols-[1fr_auto_auto] gap-3 border-b border-border bg-muted/50 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">

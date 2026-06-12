@@ -129,17 +129,41 @@ function WindowSymbol({
   );
 }
 
-function RoomShape({ room }: { room: Room }) {
+function RoomShape({
+  room,
+  selected,
+  interactive,
+}: {
+  room: Room;
+  selected: boolean;
+  interactive: boolean;
+}) {
   return (
-    <rect
-      data-room-id={room.id}
-      x={room.x * SCALE}
-      y={room.y * SCALE}
-      width={room.width * SCALE}
-      height={room.depth * SCALE}
-      className="fill-card stroke-foreground"
-      strokeWidth={WALL_T * SCALE}
-    />
+    <g>
+      <rect
+        data-room-id={room.id}
+        x={room.x * SCALE}
+        y={room.y * SCALE}
+        width={room.width * SCALE}
+        height={room.depth * SCALE}
+        className={
+          (selected ? "fill-sky-50 " : "fill-card ") +
+          "stroke-foreground transition-colors" +
+          (interactive ? " cursor-pointer hover:fill-muted/70" : "")
+        }
+        strokeWidth={WALL_T * SCALE}
+      />
+      {selected && (
+        <rect
+          x={room.x * SCALE + 2}
+          y={room.y * SCALE + 2}
+          width={room.width * SCALE - 4}
+          height={room.depth * SCALE - 4}
+          className="pointer-events-none fill-none stroke-sky-500"
+          strokeWidth={1.5}
+        />
+      )}
+    </g>
   );
 }
 
@@ -268,10 +292,16 @@ export function FloorPlanSvg({
   project,
   style,
   className,
+  selectedRoomId = null,
+  interactive = false,
 }: {
   project: ArchitectureProject;
   style?: React.CSSProperties;
   className?: string;
+  /** Highlighted room (Phase 6 selection). */
+  selectedRoomId?: string | null;
+  /** Enables pointer affordances on rooms; click handling is delegated to the parent. */
+  interactive?: boolean;
 }) {
   const { site } = project;
   const { width: vw, height: vh } = planPixelSize(project);
@@ -305,7 +335,12 @@ export function FloorPlanSvg({
         {/* rooms: fills + walls, then openings, then labels */}
         <g>
           {project.rooms.map((room) => (
-            <RoomShape key={room.id} room={room} />
+            <RoomShape
+              key={room.id}
+              room={room}
+              selected={room.id === selectedRoomId}
+              interactive={interactive}
+            />
           ))}
         </g>
         <g>

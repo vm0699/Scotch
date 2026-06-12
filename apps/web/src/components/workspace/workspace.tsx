@@ -9,7 +9,9 @@ import {
   ApiError,
   generateFromPrompt,
   getProject,
+  regenerateProject,
   updateProject,
+  type ParameterChange,
 } from "@/features/api/client";
 import { MOCK_ARCHITECTURE_PROJECT } from "@/features/project/mock-architecture-project";
 import type { ArchitectureProject } from "@/features/project/types";
@@ -41,6 +43,8 @@ export function Workspace({
   const [title, setTitle] = useState("Untitled project");
   const [generating, setGenerating] = useState(false);
   const [notice, setNotice] = useState<string | undefined>(undefined);
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [editBusy, setEditBusy] = useState(false);
 
   // Stage 4.6 — load the saved project by id.
   useEffect(() => {
@@ -89,6 +93,37 @@ export function Workspace({
     }
   }, [storedId, prompt]);
 
+  // Phase 6 — apply parameter/room edits via the regeneration engine,
+  // update the preview from the response, and persist (Stages 6.4–6.7).
+  const handleApplyChanges = useCallback(
+    async (changes: ParameterChange[]) => {
+      if (!project) return;
+      setEditBusy(true);
+      try {
+        const { project: updated, summary } = await regenerateProject(
+          project,
+          changes,
+        );
+        setProject(updated);
+        if (storedId) {
+          await updateProject(storedId, { project: updated });
+          setNotice(`${summary} Saved.`);
+        } else {
+          setNotice(summary);
+        }
+      } catch (error) {
+        setNotice(
+          error instanceof ApiError && error.status === 422
+            ? "Edit rejected — a value was out of range."
+            : NOTICE_OFFLINE,
+        );
+      } finally {
+        setEditBusy(false);
+      }
+    },
+    [project, storedId],
+  );
+
   // Stage 4.7 — rename persists when the project is saved.
   const handleRename = useCallback(
     async (name: string) => {
@@ -129,8 +164,18 @@ export function Workspace({
         project={project}
         title={title}
         onRename={(name) => void handleRename(name)}
+        selectedRoomId={selectedRoomId}
+        onSelectRoom={setSelectedRoomId}
+        editBusy={editBusy}
+        onApplyRoomEdit={(changes) => void handleApplyChanges(changes)}
       />
-      <DataPanel project={project} />
+      <DataPanel
+        project={project}
+        selectedRoomId={selectedRoomId}
+        onSelectRoom={setSelectedRoomId}
+        editBusy={editBusy}
+        onApplyChanges={(changes) => void handleApplyChanges(changes)}
+      />
     </div>
   );
 }

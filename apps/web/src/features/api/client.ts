@@ -84,6 +84,29 @@ export function generateFromPrompt(prompt: string): Promise<GenerateResponse> {
   return apiRequest("POST", "/generate/from-prompt", { prompt });
 }
 
+/** A single parameter edit applied via /generate/regenerate. */
+export interface ParameterChange {
+  key:
+    | "site_width"
+    | "site_depth"
+    | "orientation"
+    | "floors"
+    | "floor_height"
+    | "style"
+    | "room_width"
+    | "room_depth"
+    | "room_name";
+  value: string | number;
+  target_id?: string;
+}
+
+export function regenerateProject(
+  project: ArchitectureProject,
+  changes: ParameterChange[],
+): Promise<GenerateResponse> {
+  return apiRequest("POST", "/generate/regenerate", { project, changes });
+}
+
 // ── Project storage (Phase 4) ──────────────────────────────────────
 
 /** Persistence envelope around the universal model (mirrors backend StoredProject). */
