@@ -55,6 +55,54 @@ function ViewTab({
   );
 }
 
+function InlineTitle({
+  value,
+  onRename,
+}: {
+  value: string;
+  onRename: (name: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        title="Rename project"
+        onClick={() => {
+          setDraft(value);
+          setEditing(true);
+        }}
+        className="max-w-44 truncate rounded px-1 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      >
+        {value}
+      </button>
+    );
+  }
+
+  function commit() {
+    setEditing(false);
+    if (draft.trim() && draft.trim() !== value) {
+      onRename(draft);
+    }
+  }
+
+  return (
+    <input
+      autoFocus
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") commit();
+        if (e.key === "Escape") setEditing(false);
+      }}
+      className="w-44 rounded border border-ring bg-background px-1 py-0.5 text-[11px] outline-none"
+    />
+  );
+}
+
 function EmptyState({
   icon: Icon,
   title,
@@ -81,8 +129,12 @@ function EmptyState({
 
 export function PreviewPanel({
   project,
+  title,
+  onRename,
 }: {
   project: ArchitectureProject | null;
+  title: string;
+  onRename: (name: string) => void;
 }) {
   const [view, setView] = useState<ViewMode>("2d");
   const [zoom, setZoom] = useState(1);
@@ -119,10 +171,14 @@ export function PreviewPanel({
           </div>
         }
         actions={
-          <span className="text-[11px] text-muted-foreground/70">
-            {project
-              ? `${project.name} · ${project.rooms.length} rooms · ${totalBuiltArea(project)} ${unitLabel(project.units)}²`
-              : "Untitled project"}
+          <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground/70">
+            <InlineTitle value={title} onRename={onRename} />
+            {project && (
+              <span className="whitespace-nowrap">
+                · {project.rooms.length} rooms · {totalBuiltArea(project)}{" "}
+                {unitLabel(project.units)}²
+              </span>
+            )}
           </span>
         }
       />
