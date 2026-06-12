@@ -134,7 +134,7 @@ def _office_fallback_program(req: DesignRequirements, state: _GenState) -> list[
 
 
 def _pack_bands(
-    bands: list[list[_Spec]], req: DesignRequirements, state: _GenState
+    bands: list[list[_Spec]], site_width: float, site_depth: float, state: _GenState
 ) -> list[Room]:
     """Place specs left-to-right per band, wrapping when width runs out."""
     placed: list[Room] = []
@@ -144,13 +144,13 @@ def _pack_bands(
         row: list[_Spec] = []
         x = 0.0
         for spec in band:
-            if spec.width > req.site_width:
+            if spec.width > site_width:
                 state.warn(
                     f"warn-clamp-{spec.id}",
-                    f"{spec.name} ({spec.width:g} ft) is wider than the site — clamped to {req.site_width:g} ft.",
+                    f"{spec.name} ({spec.width:g} ft) is wider than the site — clamped to {site_width:g} ft.",
                 )
-                spec.width = req.site_width
-            if x + spec.width > req.site_width + 1e-9:
+                spec.width = site_width
+            if x + spec.width > site_width + 1e-9:
                 rows.append(row)
                 row = []
                 x = 0.0
@@ -161,12 +161,12 @@ def _pack_bands(
 
     total_depth = sum(max(s.depth for s in row) for row in rows)
     scale = 1.0
-    if total_depth > req.site_depth:
-        scale = req.site_depth / total_depth
+    if total_depth > site_depth:
+        scale = site_depth / total_depth
         state.warn(
             "warn-depth-compressed",
             f"The program needs {total_depth:g} ft of depth but the site has "
-            f"{req.site_depth:g} ft — room depths compressed by {round((1 - scale) * 100)}%.",
+            f"{site_depth:g} ft — room depths compressed by {round((1 - scale) * 100)}%.",
         )
 
     y = 0.0
@@ -194,7 +194,7 @@ def _pack_bands(
 
 
 def _openings(
-    rooms: list[Room], req: DesignRequirements, state: _GenState
+    rooms: list[Room], site_width: float, state: _GenState
 ) -> tuple[list[Door], list[Window]]:
     doors: list[Door] = []
     windows: list[Window] = []
@@ -228,7 +228,7 @@ def _openings(
         sides: list[tuple[str, float]] = []
         if room.x <= 1e-9:
             sides.append(("west", room.depth))
-        if abs(room.x + room.width - req.site_width) <= 1e-9:
+        if abs(room.x + room.width - site_width) <= 1e-9:
             sides.append(("east", room.depth))
         if abs(room.y + room.depth - built_depth) <= 1e-9:
             sides.append(("south", room.width))
@@ -287,8 +287,8 @@ def generate_floorplan(req: DesignRequirements) -> tuple[ArchitectureProject, st
         bands = _residential_program(req, state)
         building_type = "residential"
 
-    rooms = _pack_bands(bands, req, state)
-    doors, windows = _openings(rooms, req, state)
+    rooms = _pack_bands(bands, req.site_width, req.site_depth, state)
+    doors, windows = _openings(rooms, req.site_width, state)
 
     for assumption in req.assumptions:
         state.warnings.insert(
@@ -316,11 +316,11 @@ def generate_floorplan(req: DesignRequirements) -> tuple[ArchitectureProject, st
         doors=doors,
         windows=windows,
         parameters=[
-            Parameter(key="site_width", label="Site width", value=req.site_width, unit="ft", category="site"),
-            Parameter(key="site_depth", label="Site depth", value=req.site_depth, unit="ft", category="site"),
+            Parameter(key="site_width", label="Site width", value=req.site_width, unit="ft", category="site", min=10, max=300),
+            Parameter(key="site_depth", label="Site depth", value=req.site_depth, unit="ft", category="site", min=10, max=300),
             Parameter(key="orientation", label="Orientation", value=req.orientation, category="site"),
-            Parameter(key="floors", label="Floors", value=req.floors, category="building"),
-            Parameter(key="floor_height", label="Floor height", value=DEFAULT_FLOOR_HEIGHT, unit="ft", category="building"),
+            Parameter(key="floors", label="Floors", value=req.floors, category="building", min=1, max=4),
+            Parameter(key="floor_height", label="Floor height", value=DEFAULT_FLOOR_HEIGHT, unit="ft", category="building", min=8, max=14),
             Parameter(key="style", label="Style", value=req.style, category="building"),
         ],
         notes=[f"Generated deterministically from: “{req.prompt}”"] if req.prompt else [],
