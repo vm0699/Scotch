@@ -7,18 +7,16 @@ import { PreviewPanel } from "@/components/workspace/preview-panel";
 import { PromptPanel } from "@/components/workspace/prompt-panel";
 import {
   ApiError,
+  generateFromPrompt,
   getProject,
-  getSampleProject,
   updateProject,
 } from "@/features/api/client";
 import { MOCK_ARCHITECTURE_PROJECT } from "@/features/project/mock-architecture-project";
 import type { ArchitectureProject } from "@/features/project/types";
 import { PROJECT_TEMPLATES } from "@/features/templates/templates";
 
-const NOTICE_SAVED =
-  "Design generated and saved to your project — prompt parsing arrives in Phase 5.";
 const NOTICE_UNSAVED =
-  "Design generated (not saved — open a project from the dashboard to persist).";
+  "Generated (not saved — open a project from the dashboard to persist designs).";
 const NOTICE_OFFLINE =
   "Engine offline — showing the built-in sample. Start it with: npm run dev:api.";
 const NOTICE_NOT_FOUND =
@@ -70,18 +68,18 @@ export function Workspace({
     };
   }, [initialProjectId]);
 
-  // Generate: fetch the sample design (real engine in Phase 5) and persist it
-  // to the open project (Stage 4.7).
+  // Stage 5.5 — real deterministic generation from the prompt, persisted to
+  // the open project.
   const handleGenerate = useCallback(async () => {
     setGenerating(true);
     try {
-      const design = await getSampleProject();
+      const { project: design, summary } = await generateFromPrompt(prompt);
       setProject(design);
       if (storedId) {
         await updateProject(storedId, { prompt, project: design });
-        setNotice(NOTICE_SAVED);
+        setNotice(`${summary} Saved to your project.`);
       } else {
-        setNotice(NOTICE_UNSAVED);
+        setNotice(`${summary} ${NOTICE_UNSAVED}`);
       }
     } catch {
       setProject(MOCK_ARCHITECTURE_PROJECT);

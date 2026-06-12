@@ -69,9 +69,22 @@ export function getSampleProject(
   return apiGet("/projects/sample", { signal });
 }
 
-// ── Project storage (Phase 4) ──────────────────────────────────────
+// ── Generation (Phase 5) ───────────────────────────────────────────
 
 type ArchitectureProject = import("@/features/project/types").ArchitectureProject;
+type ProjectWarning = import("@/features/project/types").ProjectWarning;
+
+export interface GenerateResponse {
+  project: ArchitectureProject;
+  summary: string;
+  warnings: ProjectWarning[];
+}
+
+export function generateFromPrompt(prompt: string): Promise<GenerateResponse> {
+  return apiRequest("POST", "/generate/from-prompt", { prompt });
+}
+
+// ── Project storage (Phase 4) ──────────────────────────────────────
 
 /** Persistence envelope around the universal model (mirrors backend StoredProject). */
 export interface StoredProject {
