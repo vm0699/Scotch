@@ -20,6 +20,7 @@ Scotch is an AI-native architecture design platform: text-to-design for architec
 - **Phase 3 — Universal Architecture Data Model MVP: COMPLETE**
 - **Phase 4 — Local Project Storage MVP: COMPLETE**
 - **Phase 5 — Deterministic Text-to-Floorplan MVP: COMPLETE**
-- **Next: Phase 6 — Editable Parameters & Regeneration MVP (Stage 6.1 Parameter Model)**
+- **Phase 6 — Editable Parameters & Regeneration MVP: COMPLETE**
+- **Next: Phase 7 — Export MVP (Stage 7.1 JSON Export)**
 
 See [product/roadmap.md](product/roadmap.md) for stage-level detail.

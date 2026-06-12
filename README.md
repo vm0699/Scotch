@@ -103,6 +103,7 @@ The workspace currently renders a centralized sample — a typed `ArchitecturePr
 | `PATCH /projects/{id}` | Update name/prompt/design data (design is validated; 422 with errors if invalid) |
 | `DELETE /projects/{id}` | Delete the project and its exports |
 | `POST /generate/from-prompt` | `{prompt}` → `{project, summary, warnings}` — deterministic prompt-to-floorplan, no AI key needed |
+| `POST /generate/regenerate` | `{project, changes}` → `{project, summary, warnings}` — applies parameter/room edits, re-packs the layout, revalidates (422 on out-of-range) |
 
 Interactive API docs (FastAPI): http://localhost:8000/docs
 
@@ -177,6 +178,6 @@ npm run lint:web     # frontend lint
 
 ## Current Phase Status
 
-**Phases 1–5 COMPLETE** — local skeleton, CADAM-like UI shell with the architectural floor plan renderer, universal data model with validation, cloud-ready local project storage, and **working prompt-to-floorplan generation with no AI key** (63 backend tests).
+**Phases 1–6 COMPLETE** — local skeleton, CADAM-like UI shell, universal data model, cloud-ready storage, prompt-to-floorplan generation with no AI key, and **CADAM-style editing**: click any room (on the plan or in the schedule) to edit it via an inline popover or the panel; site/building parameters editable with bounds; every edit re-packs the layout, revalidates, updates the preview, and persists (72 backend tests).
 
-**Next: Phase 6 — Editable Parameters & Regeneration MVP** (parameter editing in the panel and on-canvas, room selection, live preview updates, `POST /generate/regenerate`). See the [roadmap](docs/product/roadmap.md).
+**Next: Phase 7 — Export MVP** (JSON, layered SVG, PNG, and DXF exports with a tracked manifest). See the [roadmap](docs/product/roadmap.md).

@@ -78,17 +78,17 @@ Status values: ✅ Done · 🔵 In progress · ⬜ Not started
 
 **Accept:** prompt → valid plan with no AI key; panels update; persists; logic documented.
 
-## Phase 6 — Editable Parameters & Regeneration MVP — ⬜
+## Phase 6 — Editable Parameters & Regeneration MVP — ✅ Done
 
 | Stage | Scope | Status |
 |---|---|---|
-| 6.1 Parameter model | key/label/value/unit/min/max/editable/category/target_entity_id | ⬜ |
-| 6.2 Panel editing | number/text/dropdown inputs, units, apply | ⬜ |
-| 6.3 Room selection + on-canvas | Click room → highlight + panel + **inline edit popover (CADAM-style)** | ⬜ |
-| 6.4 Live preview | Valid edits update SVG + schedule instantly | ⬜ |
-| 6.5 Regenerate API | `POST /generate/regenerate` | ⬜ |
-| 6.6 Validation on edit | Bounds, positivity, inside-site; warnings | ⬜ |
-| 6.7 Persistence | Edited project saves | ⬜ |
+| 6.1 Parameter model | key/label/value/unit/min/max/editable/category/target_id (min/max emitted by generator) | ✅ |
+| 6.2 Panel editing | Number/text/orientation-dropdown inputs with units, range styling, single Apply for dirty fields | ✅ |
+| 6.3 Room selection + on-canvas | Click room (plan or schedule row) → sky highlight + panel editor + **inline edit popover at the click (CADAM-style)**; Esc/blank-click deselects | ✅ |
+| 6.4 Live preview | Regenerate response updates SVG, schedule, parameters, and warnings in one pass | ✅ |
+| 6.5 Regenerate API | `POST /generate/regenerate` applies typed changes, re-packs bands, re-derives openings | ✅ |
+| 6.6 Validation on edit | Client min/max gating + backend range checks (422) + full validator + recomputed warnings | ✅ |
+| 6.7 Persistence | Applied edits PATCH the stored project; verified across reload | ✅ |
 
 **Accept:** edit (panel + canvas) → live preview → regenerate → validate → persist.
 
