@@ -97,6 +97,11 @@ The workspace currently renders a centralized sample — a typed `ArchitecturePr
 |---|---|
 | `GET /health` | `{"app":"scotch","status":"ok","version":"0.1.0"}` |
 | `GET /projects/sample` | Canonical validated 2BHK `ArchitectureProject` (validator advisories merged into `warnings`) |
+| `POST /projects` | Create a project `{name, prompt?}` → `StoredProject` envelope |
+| `GET /projects` | List project summaries (id, name, prompt, timestamps, room count, site label) |
+| `GET /projects/{id}` | Load a stored project |
+| `PATCH /projects/{id}` | Update name/prompt/design data (design is validated; 422 with errors if invalid) |
+| `DELETE /projects/{id}` | Delete the project and its exports |
 
 Interactive API docs (FastAPI): http://localhost:8000/docs
 
@@ -131,6 +136,19 @@ Defined in [services/api/app/core/models/project.py](services/api/app/core/model
 
 Validation ([services/api/app/core/validation/validator.py](services/api/app/core/validation/validator.py)) enforces unique room ids, rooms inside the site, level references, and opening references/fit — and emits advisory warnings (overlaps, oversized openings, large unbuilt area). Schema constraints (positive dimensions, enum fields) live on the models themselves.
 
+## Project Storage (local-first, cloud-ready)
+
+Projects persist as JSON under the backend:
+
+```
+services/api/app/data/users/local-user/projects/{project_id}/project.json
+services/api/app/data/users/local-user/projects/{project_id}/exports/      # Phase 7
+```
+
+Each `project.json` is a `StoredProject` envelope: `{id, name, prompt, created_at, updated_at, project}` where `project` is the ArchitectureProject (or `null` before first generation). Writes are atomic (temp file + rename).
+
+**Cloud open door:** all access goes through the `ProjectStore` interface ([base.py](services/api/app/core/storage/base.py)) with an explicit `user_id` on every call (today always `local-user`). The backend is chosen by `SCOTCH_STORAGE_BACKEND` via [factory.py](services/api/app/core/storage/factory.py) — a cloud implementation (S3/Supabase/database, Phase 18) is a new class and a settings change; no API or frontend restructuring.
+
 ## Testing
 
 ```powershell
@@ -148,6 +166,6 @@ npm run lint:web     # frontend lint
 
 ## Current Phase Status
 
-**Phases 1–3 COMPLETE** — local skeleton, the CADAM-like UI shell with the architectural floor plan renderer, and the universal data model: backend Pydantic schema + reusable validator (22 tests), `GET /projects/sample`, and the frontend rendering backend data with an offline fallback.
+**Phases 1–4 COMPLETE** — local skeleton, the CADAM-like UI shell with the architectural floor plan renderer, the universal data model with validation, and local-first project storage: full CRUD API behind a cloud-ready `ProjectStore` interface, real dashboard project listing with create/delete, and a workspace that loads, saves, and renames projects (35 backend tests).
 
-**Next: Phase 4 — Local Project Storage MVP** (project CRUD on the local filesystem, dashboard lists real projects, workspace loads/saves by id). See the [roadmap](docs/product/roadmap.md).
+**Next: Phase 5 — Deterministic Text-to-Floorplan MVP** (requirement parser, room defaults, rule-based layout generator, `POST /generate/from-prompt`, frontend wiring). See the [roadmap](docs/product/roadmap.md).

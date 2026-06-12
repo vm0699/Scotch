@@ -51,17 +51,17 @@ Status values: ✅ Done · 🔵 In progress · ⬜ Not started
 
 **Accept:** schema solid; validation works; sample renders from backend; JSON documented.
 
-## Phase 4 — Local Project Storage MVP — ⬜
+## Phase 4 — Local Project Storage MVP — ✅ Done
 
 | Stage | Scope | Status |
 |---|---|---|
-| 4.1 Storage layout | `data/users/local-user/projects/{id}/project.json` (+ `exports/`) | ⬜ |
-| 4.2 Local store service | `core/storage/local_store.py`: create/list/get/update/delete, save_export_manifest | ⬜ |
-| 4.3 Project routes | POST/GET `/projects`, GET/PATCH/DELETE `/projects/{id}` | ⬜ |
-| 4.4 Dashboard listing | Saved projects from backend | ⬜ |
-| 4.5 Creation flow | id, name, created_at, updated_at, prompt, data | ⬜ |
-| 4.6 Workspace loading | Load by project ID | ⬜ |
-| 4.7 Update flow | Title/data updates persist | ⬜ |
+| 4.1 Storage layout | `data/users/local-user/projects/{id}/project.json` (+ `exports/`) | ✅ |
+| 4.2 Local store service | `ProjectStore` ABC (cloud open door) + `LocalProjectStore` with atomic writes, user_id threading, manifest appender; backend picked by `SCOTCH_STORAGE_BACKEND` | ✅ |
+| 4.3 Project routes | POST/GET `/projects`, GET/PATCH/DELETE `/projects/{id}` with design validation on PATCH | ✅ |
+| 4.4 Dashboard listing | Live project cards (loading/offline/empty states) with delete + confirm dialog | ✅ |
+| 4.5 Creation flow | New Project dialog + template cards create stored projects | ✅ |
+| 4.6 Workspace loading | Loads name/prompt/design by `?project=` id | ✅ |
+| 4.7 Update flow | Generate persists design+prompt; inline title rename persists | ✅ |
 
 **Accept:** full CRUD + persistence across restart; pytest for store + routes.
 
