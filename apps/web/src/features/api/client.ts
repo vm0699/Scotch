@@ -45,3 +45,9 @@ export interface HealthResponse {
 export function getHealth(signal?: AbortSignal): Promise<HealthResponse> {
   return apiGet<HealthResponse>("/health", { signal });
 }
+
+export function getSampleProject(
+  signal?: AbortSignal,
+): Promise<import("@/features/project/types").ArchitectureProject> {
+  return apiGet("/projects/sample", { signal });
+}

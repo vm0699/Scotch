@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { Info, Lock, Sparkles } from "lucide-react";
+import { Info, Loader2, Lock, Sparkles } from "lucide-react";
 
 import {
   Panel,
@@ -35,18 +34,21 @@ export function PromptPanel({
   templateId,
   onTemplateChange,
   onGenerate,
+  generating = false,
+  notice,
 }: {
   prompt: string;
   onPromptChange: (value: string) => void;
   templateId?: string;
   onTemplateChange: (id: string) => void;
   onGenerate: () => void;
+  generating?: boolean;
+  notice?: string;
 }) {
-  const [notice, setNotice] = useState(false);
-
   function handleGenerate() {
-    setNotice(true);
-    onGenerate();
+    if (!generating) {
+      onGenerate();
+    }
   }
 
   return (
@@ -120,10 +122,19 @@ export function PromptPanel({
         </PanelSection>
 
         <PanelSection>
-          <Button onClick={handleGenerate} className="w-full justify-between" size="lg">
+          <Button
+            onClick={handleGenerate}
+            disabled={generating}
+            className="w-full justify-between"
+            size="lg"
+          >
             <span className="flex items-center gap-2">
-              <Sparkles className="size-4" />
-              Generate Design
+              {generating ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Sparkles className="size-4" />
+              )}
+              {generating ? "Generating…" : "Generate Design"}
             </span>
             <kbd className="rounded border border-primary-foreground/25 px-1.5 py-0.5 font-sans text-[10px] text-primary-foreground/70">
               Ctrl ↵
@@ -132,12 +143,11 @@ export function PromptPanel({
           <div
             className={cn(
               "mt-2.5 flex items-start gap-2 overflow-hidden rounded-md border border-border bg-muted/50 px-2.5 text-[11px] leading-4 text-muted-foreground transition-all",
-              notice ? "max-h-16 py-2 opacity-100" : "max-h-0 border-transparent py-0 opacity-0",
+              notice ? "max-h-20 py-2 opacity-100" : "max-h-0 border-transparent py-0 opacity-0",
             )}
           >
             <Info className="mt-px size-3 shrink-0" />
-            Showing the sample 2BHK design — the prompt-driven engine replaces
-            it in Phase 5.
+            {notice}
           </div>
         </PanelSection>
       </PanelBody>

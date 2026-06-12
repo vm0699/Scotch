@@ -1,13 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { DataPanel } from "@/components/workspace/data-panel";
 import { PreviewPanel } from "@/components/workspace/preview-panel";
 import { PromptPanel } from "@/components/workspace/prompt-panel";
+import { getSampleProject } from "@/features/api/client";
 import { MOCK_ARCHITECTURE_PROJECT } from "@/features/project/mock-architecture-project";
 import type { ArchitectureProject } from "@/features/project/types";
 import { PROJECT_TEMPLATES } from "@/features/templates/templates";
+
+const NOTICE_BACKEND =
+  "Loaded the validated sample from the Scotch engine — prompt parsing arrives in Phase 5.";
+const NOTICE_OFFLINE =
+  "Engine offline — showing the built-in sample. Start it with: npm run dev:api.";
 
 export function Workspace({
   initialTemplateId,
@@ -23,10 +29,32 @@ export function Workspace({
     initialTemplate?.id,
   );
   const [prompt, setPrompt] = useState(initialTemplate?.prompt ?? "");
-  // Opening a saved project loads the sample design until storage lands (Phase 4).
-  const [project, setProject] = useState<ArchitectureProject | null>(
-    initialProjectId ? MOCK_ARCHITECTURE_PROJECT : null,
-  );
+  const [project, setProject] = useState<ArchitectureProject | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [notice, setNotice] = useState<string | undefined>(undefined);
+
+  // Fetches the backend sample (real generation replaces this in Phase 5),
+  // falling back to the bundled mock when the engine is unreachable.
+  const loadSample = useCallback(async () => {
+    setGenerating(true);
+    try {
+      const fromBackend = await getSampleProject();
+      setProject(fromBackend);
+      setNotice(NOTICE_BACKEND);
+    } catch {
+      setProject(MOCK_ARCHITECTURE_PROJECT);
+      setNotice(NOTICE_OFFLINE);
+    } finally {
+      setGenerating(false);
+    }
+  }, []);
+
+  // Opening a saved project loads the sample until storage lands (Phase 4).
+  useEffect(() => {
+    if (initialProjectId) {
+      void loadSample();
+    }
+  }, [initialProjectId, loadSample]);
 
   function handleTemplateChange(id: string) {
     setTemplateId(id);
@@ -36,11 +64,6 @@ export function Workspace({
     }
   }
 
-  function handleGenerate() {
-    // Loads the sample project; replaced by POST /generate/from-prompt in Phase 5.
-    setProject(MOCK_ARCHITECTURE_PROJECT);
-  }
-
   return (
     <div className="grid h-full grid-cols-1 gap-3 p-3 lg:grid-cols-[300px_minmax(0,1fr)_340px]">
       <PromptPanel
@@ -48,7 +71,9 @@ export function Workspace({
         onPromptChange={setPrompt}
         templateId={templateId}
         onTemplateChange={handleTemplateChange}
-        onGenerate={handleGenerate}
+        onGenerate={() => void loadSample()}
+        generating={generating}
+        notice={notice}
       />
       <PreviewPanel project={project} />
       <DataPanel project={project} />
