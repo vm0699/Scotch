@@ -72,6 +72,25 @@ cd apps/web; npm run dev
 
 Open http://localhost:3000 — the top bar on the dashboard/workspace shows a live backend status indicator (green = online, red = offline).
 
+## Interface (Phase 2)
+
+- **Dashboard** (`/dashboard`) — product home: six starter templates (2BHK Apartment, 3BHK Villa, Studio, Small Cafe, Office, Duplex) with schematic thumbnails and prompt payloads, sample recent-project cards, and a Local-engine status card.
+- **Workspace** (`/workspace`) — CADAM-style three-panel editor:
+  - *Design Brief*: prompt textarea (Ctrl+Enter), template selector that fills the prompt, deterministic/AI mode control, Generate button.
+  - *Preview*: 2D Plan / 3D Massing tabs over a drafting dot-grid canvas with zoom in/out/fit controls.
+  - *Design Data*: parameters, room schedule with built-up total, export buttons (enabled in Phase 7), warnings + assumptions.
+- **Floor plan renderer** ([floor-plan-svg.tsx](apps/web/src/features/plan/floor-plan-svg.tsx)) — architectural SVG: dashed site boundary, poché walls, door swing arcs, window symbols, room labels with sizes/areas, dimension lines with slash ticks, orientation-aware north arrow.
+
+### Mock project (until Phases 3–5)
+
+The workspace currently renders a centralized sample — a typed `ArchitectureProject` ([types.ts](apps/web/src/features/project/types.ts), [mock-architecture-project.ts](apps/web/src/features/project/mock-architecture-project.ts)): a 2BHK on a 30×50 ft east-facing site with 8 positioned rooms, doors, windows, parameters, notes, and warnings. Field names are snake_case to mirror the backend Pydantic JSON one-to-one, so the Phase 3 backend swap is a data-source change, not a refactor. Pressing **Generate** (or opening a project card) loads this sample.
+
+### Current limitations
+
+- Generation is mocked — the prompt isn't parsed yet (Phase 5).
+- Projects don't persist; dashboard project cards are samples (Phase 4).
+- Parameters are read-only (editing + on-canvas editing in Phase 6); exports disabled (Phase 7); 3D tab is a placeholder (Phase 8).
+
 ## API
 
 | Endpoint | Description |
@@ -97,7 +116,6 @@ npm run lint:web     # frontend lint
 
 ## Current Phase Status
 
-**Phase 1 — Local Working Skeleton MVP: COMPLETE.**
-Backend and frontend run locally, `/health` works, the UI reflects live backend status, and landing → dashboard → workspace navigation is in place.
+**Phases 1–2 COMPLETE** — local skeleton (backend + frontend + health), and the CADAM-like UI shell: design system, dashboard with templates, three-panel workspace, mock ArchitectureProject, and the architectural SVG floor plan renderer.
 
-**Next: Phase 2 — CADAM-Like UI Shell MVP** (design system, dashboard UI, three-panel workspace, mock project, SVG floor plan renderer). See the [roadmap](docs/product/roadmap.md).
+**Next: Phase 3 — Universal Architecture Data Model MVP** (backend Pydantic models, reusable validation, sample-project factory + API, frontend switches from mock to backend data). See the [roadmap](docs/product/roadmap.md).
