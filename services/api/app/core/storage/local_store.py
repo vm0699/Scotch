@@ -143,3 +143,23 @@ class LocalProjectStore(ProjectStore):
             manifests = json.loads(manifest_file.read_text(encoding="utf-8"))
         manifests.append(json.loads(manifest.model_dump_json()))
         self._write_json(manifest_file, json.dumps(manifests, indent=2))
+
+    def list_export_manifests(
+        self, project_id: str, user_id: str = LOCAL_USER_ID
+    ) -> list[ExportManifest]:
+        if not self._project_file(user_id, project_id).exists():
+            raise ProjectNotFoundError(project_id)
+        manifest_file = (
+            self._project_dir(user_id, project_id) / "exports" / "manifest.json"
+        )
+        if not manifest_file.exists():
+            return []
+        raw: list[dict] = json.loads(manifest_file.read_text(encoding="utf-8"))
+        return [ExportManifest.model_validate(entry) for entry in raw]
+
+    def get_export_path(
+        self, project_id: str, filename: str, user_id: str = LOCAL_USER_ID
+    ) -> Path:
+        if not self._project_file(user_id, project_id).exists():
+            raise ProjectNotFoundError(project_id)
+        return self._project_dir(user_id, project_id) / "exports" / filename

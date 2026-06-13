@@ -8,6 +8,7 @@ user_id, so cloud auth and multi-user ownership slot in without API changes.
 
 from abc import ABC, abstractmethod
 from datetime import datetime
+from pathlib import Path
 
 from pydantic import BaseModel
 
@@ -101,3 +102,13 @@ class ProjectStore(ABC):
         manifest: ExportManifest,
         user_id: str = LOCAL_USER_ID,
     ) -> None: ...
+
+    @abstractmethod
+    def list_export_manifests(
+        self, project_id: str, user_id: str = LOCAL_USER_ID
+    ) -> list[ExportManifest]: ...
+
+    @abstractmethod
+    def get_export_path(
+        self, project_id: str, filename: str, user_id: str = LOCAL_USER_ID
+    ) -> Path: ...
