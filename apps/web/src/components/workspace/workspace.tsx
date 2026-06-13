@@ -8,6 +8,7 @@ import { PromptPanel } from "@/components/workspace/prompt-panel";
 import {
   ApiError,
   generateFromPrompt,
+  getGenerationSettings,
   getProject,
   regenerateProject,
   updateProject,
@@ -16,6 +17,8 @@ import {
 import { MOCK_ARCHITECTURE_PROJECT } from "@/features/project/mock-architecture-project";
 import type { ArchitectureProject } from "@/features/project/types";
 import { PROJECT_TEMPLATES } from "@/features/templates/templates";
+
+type GenerationMode = "deterministic" | "ai" | "hybrid";
 
 const NOTICE_UNSAVED =
   "Generated (not saved — open a project from the dashboard to persist designs).";
@@ -46,6 +49,17 @@ export function Workspace({
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [editBusy, setEditBusy] = useState(false);
 
+  // Phase 9 — generation mode + AI availability
+  const [generationMode, setGenerationMode] = useState<GenerationMode>("deterministic");
+  const [aiAvailable, setAiAvailable] = useState(false);
+
+  // Phase 9 — fetch generation settings once on mount to unlock AI mode tab
+  useEffect(() => {
+    getGenerationSettings()
+      .then((s) => setAiAvailable(s.anthropic_configured || s.openai_configured))
+      .catch(() => {});
+  }, []);
+
   // Stage 4.6 — load the saved project by id.
   useEffect(() => {
     if (!initialProjectId) return;
@@ -72,12 +86,14 @@ export function Workspace({
     };
   }, [initialProjectId]);
 
-  // Stage 5.5 — real deterministic generation from the prompt, persisted to
-  // the open project.
+  // Stage 5.5 — generation from prompt, persisted to the open project.
   const handleGenerate = useCallback(async () => {
     setGenerating(true);
     try {
-      const { project: design, summary } = await generateFromPrompt(prompt);
+      const { project: design, summary } = await generateFromPrompt(
+        prompt,
+        generationMode,
+      );
       setProject(design);
       if (storedId) {
         await updateProject(storedId, { prompt, project: design });
@@ -91,10 +107,9 @@ export function Workspace({
     } finally {
       setGenerating(false);
     }
-  }, [storedId, prompt]);
+  }, [storedId, prompt, generationMode]);
 
-  // Phase 6 — apply parameter/room edits via the regeneration engine,
-  // update the preview from the response, and persist (Stages 6.4–6.7).
+  // Phase 6 — apply parameter/room edits via the regeneration engine.
   const handleApplyChanges = useCallback(
     async (changes: ParameterChange[]) => {
       if (!project) return;
@@ -159,6 +174,9 @@ export function Workspace({
         onGenerate={() => void handleGenerate()}
         generating={generating}
         notice={notice}
+        mode={generationMode}
+        onModeChange={setGenerationMode}
+        aiAvailable={aiAvailable}
       />
       <PreviewPanel
         project={project}

@@ -80,8 +80,29 @@ export interface GenerateResponse {
   warnings: ProjectWarning[];
 }
 
-export function generateFromPrompt(prompt: string): Promise<GenerateResponse> {
-  return apiRequest("POST", "/generate/from-prompt", { prompt });
+export function generateFromPrompt(
+  prompt: string,
+  mode?: "deterministic" | "ai" | "hybrid",
+): Promise<GenerateResponse> {
+  return apiRequest("POST", "/generate/from-prompt", {
+    prompt,
+    ...(mode ? { mode } : {}),
+  });
+}
+
+// ── Generation settings (Phase 9) ─────────────────────────────────
+
+export interface GenerationSettings {
+  mode: string;
+  provider: string;
+  anthropic_configured: boolean;
+  openai_configured: boolean;
+}
+
+export function getGenerationSettings(
+  signal?: AbortSignal,
+): Promise<GenerationSettings> {
+  return apiGet<GenerationSettings>("/settings/generation", { signal });
 }
 
 /** A single parameter edit applied via /generate/regenerate. */

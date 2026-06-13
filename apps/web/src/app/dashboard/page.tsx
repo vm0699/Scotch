@@ -13,13 +13,7 @@ const SIDEBAR_ITEMS = [
   { label: "Projects", href: "/dashboard", icon: LayoutGrid, active: true },
   { label: "Templates", href: "/dashboard#templates", icon: Shapes },
   { label: "Open workspace", href: "/workspace", icon: FolderOpen },
-  {
-    label: "Settings",
-    href: "/dashboard",
-    icon: Settings,
-    disabled: true,
-    hint: "Provider and generation settings arrive in Phase 9",
-  },
+  { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
 export default function DashboardPage() {

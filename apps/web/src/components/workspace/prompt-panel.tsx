@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { Info, Loader2, Lock, Sparkles } from "lucide-react";
+import { Info, Loader2, Sparkles } from "lucide-react";
 
 import {
   Panel,
@@ -25,8 +25,39 @@ import {
 import { PROJECT_TEMPLATES } from "@/features/templates/templates";
 import { cn } from "@/lib/utils";
 
+type GenerationMode = "deterministic" | "ai" | "hybrid";
+
 const PROMPT_PLACEHOLDER =
-  "Describe your building — e.g. “Design a 2BHK apartment on a 30x50 ft east-facing site with living room, kitchen, 2 bedrooms, 2 bathrooms, balcony, and parking.”";
+  "Describe your building — e.g. Design a 2BHK apartment on a 30x50 ft east-facing site with living room, kitchen, 2 bedrooms, 2 bathrooms, balcony, and parking.";
+
+function ModeTab({
+  active,
+  onClick,
+  disabled,
+  children,
+}: {
+  active: boolean;
+  onClick?: () => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={disabled ? undefined : onClick}
+      className={cn(
+        "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+        active
+          ? "bg-card text-foreground shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+          : disabled
+            ? "cursor-default text-muted-foreground/40"
+            : "text-muted-foreground hover:text-foreground",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
 
 export function PromptPanel({
   prompt,
@@ -36,6 +67,9 @@ export function PromptPanel({
   onGenerate,
   generating = false,
   notice,
+  mode = "deterministic",
+  onModeChange,
+  aiAvailable = false,
 }: {
   prompt: string;
   onPromptChange: (value: string) => void;
@@ -44,12 +78,22 @@ export function PromptPanel({
   onGenerate: () => void;
   generating?: boolean;
   notice?: string;
+  mode?: GenerationMode;
+  onModeChange?: (mode: GenerationMode) => void;
+  aiAvailable?: boolean;
 }) {
   function handleGenerate() {
     if (!generating) {
       onGenerate();
     }
   }
+
+  const modeDescription =
+    mode === "ai"
+      ? "Claude analyses the brief and generates a layout. Requires an API key."
+      : mode === "hybrid"
+        ? "AI generation with automatic deterministic fallback on failure."
+        : "Rule-based layout engine. Runs locally, no API key required.";
 
   return (
     <Panel>
@@ -95,29 +139,45 @@ export function PromptPanel({
 
         <PanelSection title="Generation Mode">
           <div className="flex rounded-lg bg-muted p-0.5">
-            <button
-              type="button"
-              className="flex-1 rounded-md bg-card px-2 py-1.5 text-xs font-medium shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+            <ModeTab
+              active={mode === "deterministic"}
+              onClick={() => onModeChange?.("deterministic")}
             >
               Deterministic
-            </button>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  className="flex flex-1 cursor-default items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground/60"
+            </ModeTab>
+
+            {aiAvailable ? (
+              <>
+                <ModeTab
+                  active={mode === "ai"}
+                  onClick={() => onModeChange?.("ai")}
                 >
-                  <Lock className="size-3" />
+                  <Sparkles className="size-3" />
                   AI
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                AI providers arrive in Phase 9
-              </TooltipContent>
-            </Tooltip>
+                </ModeTab>
+                <ModeTab
+                  active={mode === "hybrid"}
+                  onClick={() => onModeChange?.("hybrid")}
+                >
+                  Hybrid
+                </ModeTab>
+              </>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="flex flex-1 cursor-default items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground/40">
+                    <Sparkles className="size-3" />
+                    AI
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-52 text-center">
+                  Add an API key in Settings to unlock AI generation mode.
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
           <p className="mt-2 text-[11px] leading-4 text-muted-foreground/70">
-            Rule-based layout engine. Runs locally, no API key required.
+            {modeDescription}
           </p>
         </PanelSection>
 
