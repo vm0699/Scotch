@@ -14,6 +14,17 @@ class Settings(BaseSettings):
     storage_backend: str = "local"
     data_dir: Path = Path(__file__).resolve().parent / "data"
 
+    # ── AI provider settings (Phase 9) ────────────────────────────────────────
+    # Generation mode: "deterministic" (no key needed) | "ai" | "hybrid"
+    generation_mode: str = "deterministic"
+    # Which provider to prefer when both keys are present: "anthropic" | "openai"
+    ai_provider: str = "anthropic"
+    anthropic_api_key: str = ""
+    anthropic_model: str = "claude-sonnet-4-6"
+    openai_api_key: str = ""
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_model: str = "gpt-4o"
+
     model_config = SettingsConfigDict(env_prefix="SCOTCH_", env_file=".env", extra="ignore")
 
 

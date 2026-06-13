@@ -1,9 +1,11 @@
+from typing import Literal
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from app.core.architecture.floorplan_generator import generate_floorplan
+from app.config import get_settings
+from app.core.ai.factory import get_provider
 from app.core.architecture.regenerate import ChangeError, ParameterChange, apply_changes
-from app.core.architecture.requirement_parser import parse_prompt
 from app.core.models import ArchitectureProject, ProjectWarning
 from app.core.validation import validate_project
 
@@ -12,6 +14,8 @@ router = APIRouter(prefix="/generate", tags=["generate"])
 
 class GenerateRequest(BaseModel):
     prompt: str = Field(default="", max_length=2000)
+    # If omitted, falls back to SCOTCH_GENERATION_MODE env setting (default: deterministic).
+    mode: Literal["deterministic", "ai", "hybrid"] | None = None
 
 
 class GenerateResponse(BaseModel):
@@ -27,13 +31,17 @@ class RegenerateRequest(BaseModel):
 
 @router.post("/from-prompt", response_model=GenerateResponse)
 def generate_from_prompt(body: GenerateRequest) -> GenerateResponse:
-    requirements = parse_prompt(body.prompt)
-    project, summary = generate_floorplan(requirements)
+    settings = get_settings()
+    effective_mode = body.mode or settings.generation_mode
+
+    try:
+        provider = get_provider(effective_mode, settings)
+        project, summary = provider.generate_project(body.prompt)
+    except ValueError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     result = validate_project(project)
     if not result.valid:
-        # The deterministic generator must always produce a valid layout;
-        # reaching this branch is a generator bug, not a user error.
         raise HTTPException(
             status_code=500,
             detail={"message": "Generated layout failed validation", "errors": result.errors},

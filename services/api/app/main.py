@@ -2,20 +2,21 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import exports, generate, health, projects
+from app.api.routes import settings as settings_routes
 from app.config import get_settings
 
 
 def create_app() -> FastAPI:
-    settings = get_settings()
+    cfg = get_settings()
     app = FastAPI(
         title="Scotch API",
         description="AI-native architecture design platform — text-to-design for architecture.",
-        version=settings.version,
+        version=cfg.version,
     )
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins,
+        allow_origins=cfg.cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -25,6 +26,7 @@ def create_app() -> FastAPI:
     app.include_router(projects.router)
     app.include_router(generate.router)
     app.include_router(exports.router)
+    app.include_router(settings_routes.router)
     return app
 
 
