@@ -92,16 +92,16 @@ Status values: ✅ Done · 🔵 In progress · ⬜ Not started
 
 **Accept:** edit (panel + canvas) → live preview → regenerate → validate → persist.
 
-## Phase 7 — Export MVP — ⬜
+## Phase 7 — Export MVP — ✅ Done
 
 | Stage | Scope | Status |
 |---|---|---|
-| 7.1 JSON export | Full ArchitectureProject | ⬜ |
-| 7.2 Layered SVG export | site/rooms/walls/doors/windows/labels/dimensions groups | ⬜ |
-| 7.3 PNG export | Rasterized plan | ⬜ |
-| 7.4 Basic DXF | ezdxf; A-SITE, A-WALL, A-DOOR, A-WINDOW, A-ROOM-TEXT, A-DIMS | ⬜ |
-| 7.5 Export manifest | filename/format/path/created_at | ⬜ |
-| 7.6 Export panel | Download buttons: JSON/SVG/PNG/DXF | ⬜ |
+| 7.1 JSON export | Full ArchitectureProject | ✅ |
+| 7.2 Layered SVG export | site/rooms/walls/doors/windows/labels/dimensions groups | ✅ |
+| 7.3 PNG export | Rasterized plan (Pillow direct draw, 2× scale) | ✅ |
+| 7.4 Basic DXF | ezdxf; A-SITE, A-WALL, A-DOOR, A-WINDOW, A-ROOM-TEXT, A-DIMS | ✅ |
+| 7.5 Export manifest | filename/format/path/created_at; list + download API | ✅ |
+| 7.6 Export panel | Download buttons JSON/SVG/PNG/DXF; busy spinner; last-export feedback | ✅ |
 
 **Accept:** all four formats download + saved under `exports/`; manifest tracked; pytest per exporter.
 
