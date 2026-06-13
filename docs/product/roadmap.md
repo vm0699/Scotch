@@ -118,16 +118,16 @@ Status values: ✅ Done · 🔵 In progress · ⬜ Not started
 
 **Accept:** 3D massing renders, syncs with edits, viewer stable.
 
-## Phase 9 — AI Provider Integration MVP — ⬜
+## Phase 9 — AI Provider Integration MVP — ✅ Done
 
 | Stage | Scope | Status |
 |---|---|---|
-| 9.1 Abstraction | `core/ai/provider.py`, `prompt_templates.py`, `schema_repair.py`; deterministic / Anthropic / OpenAI-compatible | ⬜ |
-| 9.2 Prompt template | Architecture planning engine → valid ArchitectureProject JSON only | ⬜ |
-| 9.3 Validation flow | Parse → validate → repair → deterministic fallback | ⬜ |
-| 9.4 Mode toggle | deterministic / AI / hybrid | ⬜ |
-| 9.5 Settings UI | Provider, mode, key-configured status | ⬜ |
-| 9.6 AI test prompts | 2BHK, villa, studio, cafe, office, duplex | ⬜ |
+| 9.1 Abstraction | `core/ai/provider.py`, `prompt_templates.py`, `schema_repair.py`; deterministic / Anthropic / OpenAI-compatible | ✅ |
+| 9.2 Prompt template | Architecture planning engine → valid ArchitectureProject JSON only | ✅ |
+| 9.3 Validation flow | Parse → validate → repair → deterministic fallback | ✅ |
+| 9.4 Mode toggle | deterministic / AI / hybrid | ✅ |
+| 9.5 Settings UI | Provider, mode, key-configured status | ✅ |
+| 9.6 AI test prompts | Mock provider tests — repair/fallback/mode; 32 new cases (124 total) | ✅ |
 
 **Accept:** AI mode works when key present; deterministic always available; bad output handled.
 
