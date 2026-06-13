@@ -5,8 +5,10 @@ from pydantic import BaseModel, Field
 
 from app.config import get_settings
 from app.core.ai.factory import get_provider
+from app.core.architecture.options_generator import generate_options as _generate_options
 from app.core.architecture.regenerate import ChangeError, ParameterChange, apply_changes
 from app.core.models import ArchitectureProject, ProjectWarning
+from app.core.models.project import DesignOption
 from app.core.validation import validate_project
 
 router = APIRouter(prefix="/generate", tags=["generate"])
@@ -50,6 +52,28 @@ def generate_from_prompt(body: GenerateRequest) -> GenerateResponse:
     project.warnings.extend(w for w in result.warnings if w.id not in existing)
 
     return GenerateResponse(project=project, summary=summary, warnings=project.warnings)
+
+
+class OptionsRequest(BaseModel):
+    prompt: str = Field(default="", max_length=2000)
+    mode: Literal["deterministic", "ai", "hybrid"] | None = None
+
+
+class OptionsResponse(BaseModel):
+    options: list[DesignOption]
+    prompt: str
+
+
+@router.post("/options", response_model=OptionsResponse)
+def generate_options_endpoint(body: OptionsRequest) -> OptionsResponse:
+    """Generate compact / balanced / spacious design variants from a prompt."""
+    settings = get_settings()
+    effective_mode = body.mode or settings.generation_mode
+    try:
+        options = _generate_options(body.prompt, effective_mode, settings)
+    except ValueError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return OptionsResponse(options=options, prompt=body.prompt)
 
 
 @router.post("/regenerate", response_model=GenerateResponse)

@@ -12,7 +12,7 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from app.core.models import ArchitectureProject, ExportManifest
+from app.core.models import ArchitectureProject, DesignOption, ExportManifest
 
 LOCAL_USER_ID = "local-user"
 
@@ -32,6 +32,7 @@ class StoredProject(BaseModel):
     created_at: datetime
     updated_at: datetime
     project: ArchitectureProject | None = None
+    options: list[DesignOption] = []
 
 
 class ProjectSummary(BaseModel):
@@ -89,6 +90,7 @@ class ProjectStore(ABC):
         name: str | None = None,
         prompt: str | None = None,
         project: ArchitectureProject | None = None,
+        options: list[DesignOption] | None = None,
         user_id: str = LOCAL_USER_ID,
     ) -> StoredProject: ...
 

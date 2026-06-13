@@ -131,9 +131,16 @@ Status values: ✅ Done · 🔵 In progress · ⬜ Not started
 
 **Accept:** AI mode works when key present; deterministic always available; bad output handled.
 
-## Phase 10 — Design Options MVP — ⬜
+## Phase 10 — Design Options MVP — ✅ Done
 
-Stages: 10.1 option model (option_id/score/summary/warnings/preview) · 10.2 compact/balanced/spacious generation · 10.3 option preview cards (mini plan, stats) · 10.4 apply selected option · 10.5 save options with project.
+| Stage | Scope | Status |
+|---|---|---|
+| 10.1 Option model | `DesignOption(option_id, variant, score, summary, warnings, preview)`; `StoredProject.options`; frontend `DesignOption` type | ✅ |
+| 10.2 Variant generation | `size_modifier` in `DesignRequirements`; generator scales all room sizes by modifier; `options_generator.py` produces compact (0.82×) / balanced (1.0×) / spacious (1.2×) | ✅ |
+| 10.3 Option cards | `OptionsPanel` with mini SVG plan (room-type colours), score badge, built area, summary; triggered by "compare options" link in prompt panel | ✅ |
+| 10.4 Apply option | Selected option's preview becomes active design; canvas + schedule + params update; "Applied" badge on card | ✅ |
+| 10.5 Save options | `POST /generate/options`; options PATCH'd to stored project; reloaded from storage on workspace open; 25 pytest cases | ✅ |
+
 **Accept:** 3 options generate, selectable, selected becomes editable active project.
 
 ## Phase 11 — Software Export Adapters MVP (SketchUp + Revit prioritized) — ⬜

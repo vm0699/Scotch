@@ -287,6 +287,13 @@ def generate_floorplan(req: DesignRequirements) -> tuple[ArchitectureProject, st
         bands = _residential_program(req, state)
         building_type = "residential"
 
+    if req.size_modifier != 1.0:
+        m = req.size_modifier
+        for band in bands:
+            for spec in band:
+                spec.width = max(MIN_ROOM_DIM, round(spec.width * m, 1))
+                spec.depth = max(MIN_ROOM_DIM, round(spec.depth * m, 1))
+
     rooms = _pack_bands(bands, req.site_width, req.site_depth, state)
     doors, windows = _openings(rooms, req.site_width, state)
 

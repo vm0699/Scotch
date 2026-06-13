@@ -69,10 +69,11 @@ export function getSampleProject(
   return apiGet("/projects/sample", { signal });
 }
 
-// ── Generation (Phase 5) ───────────────────────────────────────────
+// ── Generation (Phase 5 / 10) ─────────────────────────────────────
 
 type ArchitectureProject = import("@/features/project/types").ArchitectureProject;
 type ProjectWarning = import("@/features/project/types").ProjectWarning;
+type DesignOption = import("@/features/project/types").DesignOption;
 
 export interface GenerateResponse {
   project: ArchitectureProject;
@@ -85,6 +86,23 @@ export function generateFromPrompt(
   mode?: "deterministic" | "ai" | "hybrid",
 ): Promise<GenerateResponse> {
   return apiRequest("POST", "/generate/from-prompt", {
+    prompt,
+    ...(mode ? { mode } : {}),
+  });
+}
+
+// ── Design Options (Phase 10) ─────────────────────────────────────
+
+export interface OptionsResponse {
+  options: DesignOption[];
+  prompt: string;
+}
+
+export function generateOptions(
+  prompt: string,
+  mode?: "deterministic" | "ai" | "hybrid",
+): Promise<OptionsResponse> {
+  return apiRequest("POST", "/generate/options", {
     prompt,
     ...(mode ? { mode } : {}),
   });
@@ -138,6 +156,7 @@ export interface StoredProject {
   created_at: string;
   updated_at: string;
   project?: ArchitectureProject | null;
+  options?: DesignOption[];
 }
 
 /** Listing row for dashboards (mirrors backend ProjectSummary). */
@@ -175,6 +194,7 @@ export function updateProject(
     name?: string;
     prompt?: string;
     project?: ArchitectureProject;
+    options?: DesignOption[];
   },
 ): Promise<StoredProject> {
   return apiRequest("PATCH", `/projects/${projectId}`, body);

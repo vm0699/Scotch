@@ -121,6 +121,16 @@ export interface ExportManifest {
   created_at: string;
 }
 
+/** One compact / balanced / spacious variant generated from a prompt (Phase 10). */
+export interface DesignOption {
+  option_id: string;
+  variant: "compact" | "balanced" | "spacious";
+  score: number;
+  summary: string;
+  warnings: ProjectWarning[];
+  preview: ArchitectureProject;
+}
+
 export function roomArea(room: Room): number {
   return room.width * room.depth;
 }

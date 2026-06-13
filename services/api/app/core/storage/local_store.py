@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
-from app.core.models import ArchitectureProject, ExportManifest
+from app.core.models import ArchitectureProject, DesignOption, ExportManifest
 from app.core.storage.base import (
     LOCAL_USER_ID,
     ProjectNotFoundError,
@@ -108,6 +108,7 @@ class LocalProjectStore(ProjectStore):
         name: str | None = None,
         prompt: str | None = None,
         project: ArchitectureProject | None = None,
+        options: list[DesignOption] | None = None,
         user_id: str = LOCAL_USER_ID,
     ) -> StoredProject:
         stored = self._read(user_id, project_id)
@@ -117,6 +118,8 @@ class LocalProjectStore(ProjectStore):
             stored.prompt = prompt
         if project is not None:
             stored.project = project
+        if options is not None:
+            stored.options = options
         stored.updated_at = _now()
         self._save(user_id, stored)
         return stored

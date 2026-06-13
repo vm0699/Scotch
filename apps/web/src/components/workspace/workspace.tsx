@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { DataPanel } from "@/components/workspace/data-panel";
+import { OptionsPanel } from "@/components/workspace/options-panel";
 import { PreviewPanel } from "@/components/workspace/preview-panel";
 import { PromptPanel } from "@/components/workspace/prompt-panel";
 import {
   ApiError,
   generateFromPrompt,
+  generateOptions,
   getGenerationSettings,
   getProject,
   regenerateProject,
@@ -15,7 +17,7 @@ import {
   type ParameterChange,
 } from "@/features/api/client";
 import { MOCK_ARCHITECTURE_PROJECT } from "@/features/project/mock-architecture-project";
-import type { ArchitectureProject } from "@/features/project/types";
+import type { ArchitectureProject, DesignOption } from "@/features/project/types";
 import { PROJECT_TEMPLATES } from "@/features/templates/templates";
 
 type GenerationMode = "deterministic" | "ai" | "hybrid";
@@ -53,6 +55,12 @@ export function Workspace({
   const [generationMode, setGenerationMode] = useState<GenerationMode>("deterministic");
   const [aiAvailable, setAiAvailable] = useState(false);
 
+  // Phase 10 — design options
+  const [designOptions, setDesignOptions] = useState<DesignOption[] | null>(null);
+  const [optionsLoading, setOptionsLoading] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
+  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
+
   // Phase 9 — fetch generation settings once on mount to unlock AI mode tab
   useEffect(() => {
     getGenerationSettings()
@@ -72,6 +80,9 @@ export function Workspace({
         setTitle(stored.name);
         setPrompt(stored.prompt ?? "");
         setProject(stored.project ?? null);
+        if (stored.options && stored.options.length > 0) {
+          setDesignOptions(stored.options);
+        }
       } catch (error) {
         if (cancelled) return;
         setNotice(
@@ -108,6 +119,45 @@ export function Workspace({
       setGenerating(false);
     }
   }, [storedId, prompt, generationMode]);
+
+  // Phase 10 — generate compact / balanced / spacious options.
+  const handleGenerateOptions = useCallback(async () => {
+    setShowOptions(true);
+    setOptionsLoading(true);
+    setDesignOptions(null);
+    setSelectedOptionId(null);
+    try {
+      const { options } = await generateOptions(prompt, generationMode);
+      setDesignOptions(options);
+      if (storedId) {
+        await updateProject(storedId, { options });
+      }
+    } catch {
+      setShowOptions(false);
+      setNotice("Could not generate options — engine offline.");
+    } finally {
+      setOptionsLoading(false);
+    }
+  }, [prompt, generationMode, storedId]);
+
+  // Phase 10 — apply a selected option as the active design.
+  const handleApplyOption = useCallback(
+    async (option: DesignOption) => {
+      setSelectedOptionId(option.option_id);
+      setProject(option.preview);
+      if (storedId) {
+        try {
+          await updateProject(storedId, { prompt, project: option.preview });
+          setNotice(`${option.variant.charAt(0).toUpperCase() + option.variant.slice(1)} option applied and saved.`);
+        } catch {
+          setNotice("Option applied locally — engine offline, not saved.");
+        }
+      } else {
+        setNotice(`${option.variant.charAt(0).toUpperCase() + option.variant.slice(1)} option applied. ${NOTICE_UNSAVED}`);
+      }
+    },
+    [storedId, prompt],
+  );
 
   // Phase 6 — apply parameter/room edits via the regeneration engine.
   const handleApplyChanges = useCallback(
@@ -172,21 +222,36 @@ export function Workspace({
         templateId={templateId}
         onTemplateChange={handleTemplateChange}
         onGenerate={() => void handleGenerate()}
+        onGenerateOptions={() => void handleGenerateOptions()}
         generating={generating}
         notice={notice}
         mode={generationMode}
         onModeChange={setGenerationMode}
         aiAvailable={aiAvailable}
       />
-      <PreviewPanel
-        project={project}
-        title={title}
-        onRename={(name) => void handleRename(name)}
-        selectedRoomId={selectedRoomId}
-        onSelectRoom={setSelectedRoomId}
-        editBusy={editBusy}
-        onApplyRoomEdit={(changes) => void handleApplyChanges(changes)}
-      />
+
+      {/* Center column: options panel (when open) + floor plan canvas stacked */}
+      <div className="flex min-h-0 flex-col gap-3">
+        {showOptions && (
+          <OptionsPanel
+            options={designOptions}
+            loading={optionsLoading}
+            selectedOptionId={selectedOptionId}
+            onApply={(opt) => void handleApplyOption(opt)}
+            onClose={() => setShowOptions(false)}
+          />
+        )}
+        <PreviewPanel
+          project={project}
+          title={title}
+          onRename={(name) => void handleRename(name)}
+          selectedRoomId={selectedRoomId}
+          onSelectRoom={setSelectedRoomId}
+          editBusy={editBusy}
+          onApplyRoomEdit={(changes) => void handleApplyChanges(changes)}
+        />
+      </div>
+
       <DataPanel
         project={project}
         storedId={storedId}

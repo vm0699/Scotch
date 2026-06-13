@@ -1,6 +1,7 @@
 from app.core.models.project import (
     ArchitectureProject,
     Building,
+    DesignOption,
     Door,
     ExportManifest,
     Level,
@@ -20,6 +21,7 @@ from app.core.models.project import (
 __all__ = [
     "ArchitectureProject",
     "Building",
+    "DesignOption",
     "Door",
     "ExportManifest",
     "Level",

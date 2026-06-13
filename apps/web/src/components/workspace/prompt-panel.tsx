@@ -65,6 +65,7 @@ export function PromptPanel({
   templateId,
   onTemplateChange,
   onGenerate,
+  onGenerateOptions,
   generating = false,
   notice,
   mode = "deterministic",
@@ -76,6 +77,7 @@ export function PromptPanel({
   templateId?: string;
   onTemplateChange: (id: string) => void;
   onGenerate: () => void;
+  onGenerateOptions?: () => void;
   generating?: boolean;
   notice?: string;
   mode?: GenerationMode;
@@ -200,6 +202,18 @@ export function PromptPanel({
               Ctrl ↵
             </kbd>
           </Button>
+
+          {onGenerateOptions && (
+            <button
+              type="button"
+              onClick={generating ? undefined : onGenerateOptions}
+              disabled={generating}
+              className="mt-2 w-full text-center text-[11px] text-muted-foreground/70 transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+            >
+              or compare compact · balanced · spacious options
+            </button>
+          )}
+
           <div
             className={cn(
               "mt-2.5 flex items-start gap-2 overflow-hidden rounded-md border border-border bg-muted/50 px-2.5 text-[11px] leading-4 text-muted-foreground transition-all",

@@ -125,3 +125,14 @@ class ExportManifest(BaseModel):
     format: str
     path: str
     created_at: datetime
+
+
+class DesignOption(BaseModel):
+    """One compact/balanced/spacious design variant generated from a prompt."""
+
+    option_id: str
+    variant: Literal["compact", "balanced", "spacious"]
+    score: float = Field(ge=0, le=10)
+    summary: str
+    warnings: list[ProjectWarning] = []
+    preview: ArchitectureProject

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from app.core.architecture.sample_factory import create_sample_project
-from app.core.models import ArchitectureProject
+from app.core.models import ArchitectureProject, DesignOption
 from app.core.storage import (
     ProjectNotFoundError,
     ProjectStore,
@@ -24,6 +24,7 @@ class UpdateProjectRequest(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=120)
     prompt: str | None = None
     project: ArchitectureProject | None = None
+    options: list[DesignOption] | None = None
 
 
 def _validated(project: ArchitectureProject | None) -> ArchitectureProject | None:
@@ -94,6 +95,7 @@ def update_project(
             name=body.name,
             prompt=body.prompt,
             project=_validated(body.project),
+            options=body.options,
         )
     except ProjectNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc

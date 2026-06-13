@@ -34,6 +34,8 @@ class DesignRequirements(BaseModel):
     storage: bool
     assumptions: list[str] = []
     prompt: str
+    # Multiplier applied to all default room sizes; 1.0 = standard, <1 = compact, >1 = spacious.
+    size_modifier: float = 1.0
 
 
 _SIZE = re.compile(r"(\d+(?:\.\d+)?)\s*[x×*]\s*(\d+(?:\.\d+)?)\s*(?:ft|feet|')?", re.I)
