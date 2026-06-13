@@ -105,16 +105,16 @@ Status values: ✅ Done · 🔵 In progress · ⬜ Not started
 
 **Accept:** all four formats download + saved under `exports/`; manifest tracked; pytest per exporter.
 
-## Phase 8 — 3D Massing MVP — ⬜
+## Phase 8 — 3D Massing MVP — ✅ Done
 
 | Stage | Scope | Status |
 |---|---|---|
-| 8.1 3D data generator | Slabs, wall extrusions, openings, roof, material tags | ⬜ |
-| 8.2 R3F viewer | Orbit/zoom/pan/reset; 2D/3D toggle | ⬜ |
-| 8.3 Extrusion | Walls from room boundaries, slab, roof plane | ⬜ |
-| 8.4 Basic materials | Walls, floors, doors, glass, roof | ⬜ |
-| 8.5 Parameter sync | Edits update 3D | ⬜ |
-| 8.6 GLTF prep | Export path prepared | ⬜ |
+| 8.1 3D data generator | `features/massing/massing-data.ts`: ground/floor/roof slabs, 4-wall boxes per room, door + window glass insets; plan(x,y)→three.js(x,z) | ✅ |
+| 8.2 R3F viewer | `massing-viewer.tsx` (next/dynamic ssr:false); OrbitControls, ambient+directional lighting, neutral background; reset camera button | ✅ |
+| 8.3 Extrusion | Walls from room boundary boxes at building.floor_height, floor + roof slabs from site footprint | ✅ |
+| 8.4 Basic materials | meshStandardMaterial palette: wall (#f8f7f5), floor (warm gray), roof (darker), glass (translucent blue), ground | ✅ |
+| 8.5 Parameter sync | Viewer derives from `project` prop; useMemo re-runs buildMassingData on every project change — sync is automatic | ✅ |
+| 8.6 GLTF prep | GLTFExporter lazy-imported; exportGltf() wired to GLTF button in viewer toolbar; downloads massing.gltf | ✅ |
 
 **Accept:** 3D massing renders, syncs with edits, viewer stable.
 
