@@ -51,7 +51,7 @@ function GhostRow({ label, width }: { label: string; width: string }) {
   );
 }
 
-const EXPORT_FORMATS: { label: string; fmt: ExportFormat; icon: React.ElementType }[] = [
+const EXPORT_FORMATS: { label: string; fmt: ExportFormat; icon: React.ComponentType<{ className?: string }> }[] = [
   { label: "JSON", fmt: "json", icon: Braces },
   { label: "SVG", fmt: "svg", icon: FileCode2 },
   { label: "PNG", fmt: "png", icon: FileImage },

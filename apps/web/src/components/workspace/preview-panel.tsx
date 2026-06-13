@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Box, Compass, Maximize2, Minus, PenLine, Plus, X } from "lucide-react";
 
@@ -19,6 +20,22 @@ import {
   type ArchitectureProject,
 } from "@/features/project/types";
 import { cn } from "@/lib/utils";
+
+// Dynamically imported: R3F uses browser-only WebGL APIs (ssr:false required)
+const MassingViewer = dynamic(
+  () =>
+    import("@/features/massing/massing-viewer").then((m) => ({
+      default: m.MassingViewer,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+        Loading 3D…
+      </div>
+    ),
+  },
+);
 
 const POPOVER_W = 232;
 const POPOVER_H = 200;
@@ -260,11 +277,15 @@ export function PreviewPanel({
               body="Describe your building in the brief and press Generate. The floor plan renders here."
             />
           )
+        ) : project ? (
+          <div className="absolute inset-0">
+            <MassingViewer project={project} />
+          </div>
         ) : (
           <EmptyState
             icon={Box}
             title="3D massing"
-            body="Walls and slabs extrude from your plan here in Phase 8."
+            body="Generate a floor plan first — walls and slabs will extrude here."
           />
         )}
 
@@ -300,13 +321,15 @@ export function PreviewPanel({
           </div>
         )}
 
-        {/* scale chip */}
-        <div className="absolute bottom-3 left-3 rounded-md border border-border bg-card px-2 py-1 font-mono text-[10px] text-muted-foreground shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-          {project ? unitLabel(project.units) : "ft"} · plan
-        </div>
+        {/* scale chip — 2D only */}
+        {view === "2d" && (
+          <div className="absolute bottom-3 left-3 rounded-md border border-border bg-card px-2 py-1 font-mono text-[10px] text-muted-foreground shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+            {project ? unitLabel(project.units) : "ft"} · plan
+          </div>
+        )}
 
-        {/* zoom cluster */}
-        <div className="absolute bottom-3 right-3 flex items-center rounded-lg border border-border bg-card p-0.5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+        {/* zoom cluster — 2D only (3D viewer has its own overlay controls) */}
+        {view === "2d" && <div className="absolute bottom-3 right-3 flex items-center rounded-lg border border-border bg-card p-0.5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -354,7 +377,7 @@ export function PreviewPanel({
             </TooltipTrigger>
             <TooltipContent side="top">Fit to view</TooltipContent>
           </Tooltip>
-        </div>
+        </div>}
       </div>
     </Panel>
   );
