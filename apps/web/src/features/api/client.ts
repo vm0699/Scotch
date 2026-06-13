@@ -162,3 +162,45 @@ export function updateProject(
 export function deleteProject(projectId: string): Promise<void> {
   return apiRequest("DELETE", `/projects/${projectId}`);
 }
+
+// ── Exports (Phase 7) ─────────────────────────────────────────────
+
+export type ExportFormat = "json" | "svg" | "png" | "dxf";
+
+export interface ExportManifest {
+  filename: string;
+  format: string;
+  path: string;
+  created_at: string;
+}
+
+export function triggerExport(
+  projectId: string,
+  format: ExportFormat,
+): Promise<ExportManifest> {
+  return apiRequest("POST", `/projects/${projectId}/exports/${format}`);
+}
+
+export function listExports(projectId: string): Promise<ExportManifest[]> {
+  return apiGet(`/projects/${projectId}/exports`);
+}
+
+/** Fetch an export file as a Blob for browser download. */
+export async function fetchExportBlob(
+  projectId: string,
+  filename: string,
+): Promise<Blob> {
+  let response: Response;
+  try {
+    response = await fetch(
+      `${API_BASE_URL}/projects/${projectId}/exports/${filename}`,
+      { cache: "no-store" },
+    );
+  } catch {
+    throw new ApiError(`Backend unreachable at ${API_BASE_URL}`);
+  }
+  if (!response.ok) {
+    throw new ApiError(`Download failed with ${response.status}`, response.status);
+  }
+  return response.blob();
+}

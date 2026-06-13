@@ -6,9 +6,11 @@ import {
   FileCode2,
   FileImage,
   Info,
+  Loader2,
   ShieldCheck,
   TriangleAlert,
 } from "lucide-react";
+import { useState } from "react";
 
 import {
   Panel,
@@ -25,6 +27,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { ParameterChange } from "@/features/api/client";
+import {
+  fetchExportBlob,
+  triggerExport,
+  type ExportFormat,
+} from "@/features/api/client";
 import {
   formatRoomSize,
   roomArea,
@@ -44,12 +51,12 @@ function GhostRow({ label, width }: { label: string; width: string }) {
   );
 }
 
-const EXPORT_FORMATS = [
-  { label: "JSON", icon: Braces },
-  { label: "SVG", icon: FileCode2 },
-  { label: "PNG", icon: FileImage },
-  { label: "DXF", icon: FileBox },
-] as const;
+const EXPORT_FORMATS: { label: string; fmt: ExportFormat; icon: React.ElementType }[] = [
+  { label: "JSON", fmt: "json", icon: Braces },
+  { label: "SVG", fmt: "svg", icon: FileCode2 },
+  { label: "PNG", fmt: "png", icon: FileImage },
+  { label: "DXF", fmt: "dxf", icon: FileBox },
+];
 
 const WARNING_STYLES = {
   info: { icon: Info, className: "text-muted-foreground" },
@@ -117,14 +124,95 @@ function RoomSchedule({
   );
 }
 
+function ExportSection({
+  project,
+  storedId,
+}: {
+  project: ArchitectureProject | null;
+  storedId: string | null;
+}) {
+  const [busyFmt, setBusyFmt] = useState<ExportFormat | null>(null);
+  const [lastExport, setLastExport] = useState<string | null>(null);
+  const canExport = Boolean(storedId && project);
+
+  async function handleExport(fmt: ExportFormat) {
+    if (!storedId || !project || busyFmt) return;
+    setBusyFmt(fmt);
+    setLastExport(null);
+    try {
+      const manifest = await triggerExport(storedId, fmt);
+      const blob = await fetchExportBlob(storedId, manifest.filename);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = manifest.filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+      setLastExport(fmt.toUpperCase());
+    } catch {
+      setLastExport(null);
+    } finally {
+      setBusyFmt(null);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="grid grid-cols-2 gap-2">
+        {EXPORT_FORMATS.map(({ label, fmt, icon: Icon }) => {
+          const busy = busyFmt === fmt;
+          return (
+            <Tooltip key={fmt}>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!canExport || busyFmt !== null}
+                    onClick={() => void handleExport(fmt)}
+                    className="w-full justify-start gap-2"
+                  >
+                    {busy ? (
+                      <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+                    ) : (
+                      <Icon className="size-3.5 text-muted-foreground" />
+                    )}
+                    {label}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {!canExport && (
+                <TooltipContent side="top">
+                  {storedId
+                    ? "Generate a floor plan to enable exports"
+                    : "Save the project first to enable exports"}
+                </TooltipContent>
+              )}
+            </Tooltip>
+          );
+        })}
+      </div>
+      {lastExport && (
+        <p className="text-[11px] text-muted-foreground">
+          {lastExport} downloaded.
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function DataPanel({
   project,
+  storedId,
   selectedRoomId,
   onSelectRoom,
   editBusy,
   onApplyChanges,
 }: {
   project: ArchitectureProject | null;
+  storedId: string | null;
   selectedRoomId: string | null;
   onSelectRoom: (roomId: string | null) => void;
   editBusy: boolean;
@@ -208,28 +296,7 @@ export function DataPanel({
         </PanelSection>
 
         <PanelSection title="Exports">
-          <div className="grid grid-cols-2 gap-2">
-            {EXPORT_FORMATS.map((format) => (
-              <Tooltip key={format.label}>
-                <TooltipTrigger asChild>
-                  <span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled
-                      className="w-full justify-start gap-2"
-                    >
-                      <format.icon className="size-3.5 text-muted-foreground" />
-                      {format.label}
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  Exports arrive in Phase 7
-                </TooltipContent>
-              </Tooltip>
-            ))}
-          </div>
+          <ExportSection project={project} storedId={storedId} />
         </PanelSection>
 
         <PanelSection title="Warnings">

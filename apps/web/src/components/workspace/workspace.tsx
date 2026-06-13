@@ -171,6 +171,7 @@ export function Workspace({
       />
       <DataPanel
         project={project}
+        storedId={storedId}
         selectedRoomId={selectedRoomId}
         onSelectRoom={setSelectedRoomId}
         editBusy={editBusy}
