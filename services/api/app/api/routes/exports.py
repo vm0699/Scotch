@@ -1,0 +1,119 @@
+"""Stage 7.5 — Export API.
+
+POST /projects/{id}/exports/{format}  → run exporter, save file, append manifest,
+                                        return ExportManifest entry.
+GET  /projects/{id}/exports           → list manifest entries.
+GET  /projects/{id}/exports/{filename}→ FileResponse download.
+
+format ∈ json | svg | png | dxf
+"""
+
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import FileResponse
+
+from app.core.exports import export_dxf, export_json, export_png, export_svg
+from app.core.models import ExportManifest
+from app.core.storage import (
+    ProjectNotFoundError,
+    ProjectStore,
+    get_project_store,
+)
+from app.core.validation import validate_project
+
+ExportFormat = Literal["json", "svg", "png", "dxf"]
+
+_MIME = {
+    "json": "application/json",
+    "svg": "image/svg+xml",
+    "png": "image/png",
+    "dxf": "application/dxf",
+}
+
+router = APIRouter(prefix="/projects", tags=["exports"])
+
+
+def _export_filename(project_id: str, fmt: str) -> str:
+    return f"floor_plan.{fmt}"
+
+
+@router.post("/{project_id}/exports/{fmt}", response_model=ExportManifest, status_code=201)
+def trigger_export(
+    project_id: str,
+    fmt: ExportFormat,
+    store: ProjectStore = Depends(get_project_store),
+) -> ExportManifest:
+    try:
+        stored = store.get_project(project_id)
+    except ProjectNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    if stored.project is None:
+        raise HTTPException(
+            status_code=409,
+            detail="Project has no design data — generate a floor plan first.",
+        )
+
+    project = stored.project
+    result = validate_project(project)
+    if not result.valid:
+        raise HTTPException(
+            status_code=422,
+            detail={"message": "Project failed validation", "errors": result.errors},
+        )
+
+    filename = _export_filename(project_id, fmt)
+    output_path: Path = store.get_export_path(project_id, filename)
+
+    if fmt == "json":
+        export_json(project, output_path)
+    elif fmt == "svg":
+        export_svg(project, output_path)
+    elif fmt == "png":
+        export_png(project, output_path)
+    elif fmt == "dxf":
+        export_dxf(project, output_path)
+
+    manifest = ExportManifest(
+        filename=filename,
+        format=fmt,
+        path=str(output_path),
+        created_at=datetime.now(timezone.utc),
+    )
+    store.save_export_manifest(project_id, manifest)
+    return manifest
+
+
+@router.get("/{project_id}/exports", response_model=list[ExportManifest])
+def list_exports(
+    project_id: str,
+    store: ProjectStore = Depends(get_project_store),
+) -> list[ExportManifest]:
+    try:
+        return store.list_export_manifests(project_id)
+    except ProjectNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get("/{project_id}/exports/{filename}")
+def download_export(
+    project_id: str,
+    filename: str,
+    store: ProjectStore = Depends(get_project_store),
+) -> FileResponse:
+    try:
+        path = store.get_export_path(project_id, filename)
+    except ProjectNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    if not path.exists():
+        raise HTTPException(
+            status_code=404, detail=f"Export file '{filename}' not found."
+        )
+
+    ext = filename.rsplit(".", 1)[-1].lower()
+    media_type = _MIME.get(ext, "application/octet-stream")
+    return FileResponse(path=str(path), media_type=media_type, filename=filename)
