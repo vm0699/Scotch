@@ -215,3 +215,229 @@ def test_api_export_rejects_project_without_design(client):
 def test_api_export_404_for_unknown_project(client):
     r = client.post("/projects/nonexistent/exports/svg")
     assert r.status_code == 404
+
+
+# ── 11.1 DXF deepening ───────────────────────────────────────────────────────
+
+
+def test_dxf_has_hatch_layer(tmp_path, sample):
+    out = tmp_path / "floor_plan.dxf"
+    export_dxf(sample, out)
+    doc = ezdxf.readfile(str(out))
+    layer_names = [layer.dxf.name for layer in doc.layers]
+    assert "A-HATCH" in layer_names
+
+
+def test_dxf_has_anno_and_title_layers(tmp_path, sample):
+    out = tmp_path / "floor_plan.dxf"
+    export_dxf(sample, out)
+    doc = ezdxf.readfile(str(out))
+    layer_names = [layer.dxf.name for layer in doc.layers]
+    assert "A-ANNO" in layer_names
+    assert "A-TITLE" in layer_names
+
+
+def test_dxf_hatch_count_matches_rooms(tmp_path, sample):
+    out = tmp_path / "floor_plan.dxf"
+    export_dxf(sample, out)
+    doc = ezdxf.readfile(str(out))
+    msp = doc.modelspace()
+    hatches = [e for e in msp if e.dxftype() == "HATCH"]
+    assert len(hatches) == len(sample.rooms)
+
+
+def test_dxf_title_block_has_text_entities(tmp_path, sample):
+    out = tmp_path / "floor_plan.dxf"
+    export_dxf(sample, out)
+    doc = ezdxf.readfile(str(out))
+    msp = doc.modelspace()
+    title_texts = [
+        e for e in msp
+        if e.dxf.layer == "A-TITLE" and e.dxftype() in ("TEXT", "MTEXT")
+    ]
+    assert len(title_texts) >= 2  # at minimum: project name + subtitle
+
+
+def test_dxf_north_arrow_entities_on_anno_layer(tmp_path, sample):
+    out = tmp_path / "floor_plan.dxf"
+    export_dxf(sample, out)
+    doc = ezdxf.readfile(str(out))
+    msp = doc.modelspace()
+    anno_ents = [e for e in msp if e.dxf.layer == "A-ANNO"]
+    assert len(anno_ents) >= 3  # circle + arrow lines + N text
+
+
+# ── 11.2 SketchUp Ruby exporter ──────────────────────────────────────────────
+
+
+def test_sketchup_exporter_writes_file(tmp_path, sample):
+    from app.core.exports import export_sketchup
+    out = tmp_path / "floor_plan.rb"
+    export_sketchup(sample, out)
+    assert out.exists()
+    assert out.stat().st_size > 0
+
+
+def test_sketchup_exporter_returns_bytes(tmp_path, sample):
+    from app.core.exports import export_sketchup
+    out = tmp_path / "floor_plan.rb"
+    result = export_sketchup(sample, out)
+    assert isinstance(result, bytes)
+
+
+def test_sketchup_has_ruby_structure(tmp_path, sample):
+    from app.core.exports import export_sketchup
+    out = tmp_path / "floor_plan.rb"
+    rb = export_sketchup(sample, out).decode("utf-8")
+    assert "require 'sketchup'" in rb
+    assert "model.start_operation" in rb
+    assert "model.commit_operation" in rb
+
+
+def test_sketchup_has_all_room_names(tmp_path, sample):
+    from app.core.exports import export_sketchup
+    out = tmp_path / "floor_plan.rb"
+    rb = export_sketchup(sample, out).decode("utf-8")
+    for room in sample.rooms:
+        assert room.name in rb, f"Room {room.name!r} missing from SketchUp script"
+
+
+def test_sketchup_has_geometry_primitives(tmp_path, sample):
+    from app.core.exports import export_sketchup
+    out = tmp_path / "floor_plan.rb"
+    rb = export_sketchup(sample, out).decode("utf-8")
+    assert "Geom::Point3d.new" in rb
+    assert "pushpull" in rb
+    assert "Ground Slab" in rb
+    assert "Roof Slab" in rb
+
+
+def test_sketchup_has_materials(tmp_path, sample):
+    from app.core.exports import export_sketchup
+    out = tmp_path / "floor_plan.rb"
+    rb = export_sketchup(sample, out).decode("utf-8")
+    assert "scotch_mat" in rb
+    assert "Scotch_Wall" in rb
+
+
+def test_sketchup_has_tags(tmp_path, sample):
+    from app.core.exports import export_sketchup
+    out = tmp_path / "floor_plan.rb"
+    rb = export_sketchup(sample, out).decode("utf-8")
+    assert "S-SITE" in rb
+    assert "S-ROOMS" in rb
+    assert "S-ROOF" in rb
+
+
+def test_api_export_sketchup(client, project_with_design):
+    r = client.post(f"/projects/{project_with_design}/exports/sketchup")
+    assert r.status_code == 201
+    body = r.json()
+    assert body["format"] == "sketchup"
+    assert body["filename"].endswith(".rb")
+
+
+def test_api_download_sketchup(client, project_with_design):
+    client.post(f"/projects/{project_with_design}/exports/sketchup")
+    r = client.get(f"/projects/{project_with_design}/exports/floor_plan.rb")
+    assert r.status_code == 200
+    assert b"require 'sketchup'" in r.content
+
+
+# ── 11.4 Blender Python exporter ─────────────────────────────────────────────
+
+
+def test_blender_exporter_writes_file(tmp_path, sample):
+    from app.core.exports import export_blender
+    out = tmp_path / "floor_plan.py"
+    export_blender(sample, out)
+    assert out.exists()
+    assert out.stat().st_size > 0
+
+
+def test_blender_exporter_returns_bytes(tmp_path, sample):
+    from app.core.exports import export_blender
+    out = tmp_path / "floor_plan.py"
+    result = export_blender(sample, out)
+    assert isinstance(result, bytes)
+
+
+def test_blender_has_bpy_imports(tmp_path, sample):
+    from app.core.exports import export_blender
+    out = tmp_path / "floor_plan.py"
+    py = export_blender(sample, out).decode("utf-8")
+    assert "import bpy" in py
+    assert "import bmesh" in py
+
+
+def test_blender_has_all_room_names(tmp_path, sample):
+    from app.core.exports import export_blender
+    out = tmp_path / "floor_plan.py"
+    py = export_blender(sample, out).decode("utf-8")
+    for room in sample.rooms:
+        safe = room.name.replace(" ", "_").replace("'", "")
+        assert safe in py, f"Room safe-name {safe!r} missing from Blender script"
+
+
+def test_blender_has_boolean_modifiers(tmp_path, sample):
+    from app.core.exports import export_blender
+    out = tmp_path / "floor_plan.py"
+    py = export_blender(sample, out).decode("utf-8")
+    assert "BOOLEAN" in py
+    assert "DIFFERENCE" in py
+
+
+def test_blender_has_cameras(tmp_path, sample):
+    from app.core.exports import export_blender
+    out = tmp_path / "floor_plan.py"
+    py = export_blender(sample, out).decode("utf-8")
+    assert "Cam_Top" in py
+    assert "Cam_Exterior" in py
+    assert "ORTHO" in py
+
+
+def test_blender_has_lighting(tmp_path, sample):
+    from app.core.exports import export_blender
+    out = tmp_path / "floor_plan.py"
+    py = export_blender(sample, out).decode("utf-8")
+    assert "SUN" in py
+    assert "AREA" in py
+
+
+def test_blender_has_render_settings(tmp_path, sample):
+    from app.core.exports import export_blender
+    out = tmp_path / "floor_plan.py"
+    py = export_blender(sample, out).decode("utf-8")
+    assert "BLENDER_EEVEE" in py
+    assert "resolution_x" in py
+
+
+def test_blender_has_materials(tmp_path, sample):
+    from app.core.exports import export_blender
+    out = tmp_path / "floor_plan.py"
+    py = export_blender(sample, out).decode("utf-8")
+    assert "scotch_mat" in py
+    assert "Principled BSDF" in py
+
+
+def test_blender_collections(tmp_path, sample):
+    from app.core.exports import export_blender
+    out = tmp_path / "floor_plan.py"
+    py = export_blender(sample, out).decode("utf-8")
+    for col in ("Scotch_Site", "Scotch_Rooms", "Scotch_Lighting", "Scotch_Cameras"):
+        assert col in py, f"Collection {col!r} missing from Blender script"
+
+
+def test_api_export_blender(client, project_with_design):
+    r = client.post(f"/projects/{project_with_design}/exports/blender")
+    assert r.status_code == 201
+    body = r.json()
+    assert body["format"] == "blender"
+    assert body["filename"].endswith(".py")
+
+
+def test_api_download_blender(client, project_with_design):
+    client.post(f"/projects/{project_with_design}/exports/blender")
+    r = client.get(f"/projects/{project_with_design}/exports/floor_plan.py")
+    assert r.status_code == 200
+    assert b"import bpy" in r.content

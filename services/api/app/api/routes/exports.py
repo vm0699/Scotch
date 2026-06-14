@@ -1,11 +1,11 @@
-"""Stage 7.5 — Export API.
+"""Export API — Phase 7 + Phase 11 (software adapters).
 
 POST /projects/{id}/exports/{format}  → run exporter, save file, append manifest,
                                         return ExportManifest entry.
 GET  /projects/{id}/exports           → list manifest entries.
 GET  /projects/{id}/exports/{filename}→ FileResponse download.
 
-format ∈ json | svg | png | dxf
+format ∈ json | svg | png | dxf | sketchup | blender
 """
 
 from datetime import datetime, timezone
@@ -15,7 +15,14 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 
-from app.core.exports import export_dxf, export_json, export_png, export_svg
+from app.core.exports import (
+    export_blender,
+    export_dxf,
+    export_json,
+    export_png,
+    export_sketchup,
+    export_svg,
+)
 from app.core.models import ExportManifest
 from app.core.storage import (
     ProjectNotFoundError,
@@ -24,20 +31,35 @@ from app.core.storage import (
 )
 from app.core.validation import validate_project
 
-ExportFormat = Literal["json", "svg", "png", "dxf"]
+ExportFormat = Literal["json", "svg", "png", "dxf", "sketchup", "blender"]
 
 _MIME = {
-    "json": "application/json",
-    "svg": "image/svg+xml",
-    "png": "image/png",
-    "dxf": "application/dxf",
+    "json":     "application/json",
+    "svg":      "image/svg+xml",
+    "png":      "image/png",
+    "dxf":      "application/dxf",
+    "sketchup": "text/plain",
+    "blender":  "text/x-python",
+    "rb":       "text/plain",
+    "py":       "text/x-python",
 }
 
 router = APIRouter(prefix="/projects", tags=["exports"])
 
 
+_EXT = {
+    "json":     "json",
+    "svg":      "svg",
+    "png":      "png",
+    "dxf":      "dxf",
+    "sketchup": "rb",
+    "blender":  "py",
+}
+
+
 def _export_filename(project_id: str, fmt: str) -> str:
-    return f"floor_plan.{fmt}"
+    ext = _EXT.get(fmt, fmt)
+    return f"floor_plan.{ext}"
 
 
 @router.post("/{project_id}/exports/{fmt}", response_model=ExportManifest, status_code=201)
@@ -76,6 +98,10 @@ def trigger_export(
         export_png(project, output_path)
     elif fmt == "dxf":
         export_dxf(project, output_path)
+    elif fmt == "sketchup":
+        export_sketchup(project, output_path)
+    elif fmt == "blender":
+        export_blender(project, output_path)
 
     manifest = ExportManifest(
         filename=filename,

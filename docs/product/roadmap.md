@@ -143,9 +143,20 @@ Status values: ✅ Done · 🔵 In progress · ⬜ Not started
 
 **Accept:** 3 options generate, selectable, selected becomes editable active project.
 
-## Phase 11 — Software Export Adapters MVP (SketchUp + Revit prioritized) — ⬜
+## Phase 11 — Software Export Adapters MVP (SketchUp + Revit prioritized) — ✅ Done
 
-Stages: 11.1 DXF deepening (entities, text, dims) · 11.2 SketchUp Ruby exporter (.rb: slab, walls, opening placeholders, groups, materials) · 11.3 Revit add-in strategy (pulled up: C# architecture, JSON import flow, element creation plan, sync strategy) · 11.4 Blender Python exporter (walls/floors/materials/cameras/lights) · 11.5 Rhino script strategy.
+| Stage | Scope | Status |
+|---|---|---|
+| 11.1 DXF deepening | HATCH poché fill (ANSI31), DIMLINEAR room dims, opening call-out tags (D1/W1), north arrow, title block; new layers A-HATCH / A-ANNO / A-TITLE | ✅ |
+| 11.2 SketchUp Ruby | `.rb` script: ground slab, hollow room walls (double-rect pushpull), room materials by type, door opening markers, roof slab, camera reset; S-SITE/S-ROOMS/S-ROOF tags | ✅ |
+| 11.3 Revit add-in strategy | `docs/integrations/revit-addin-strategy.md`: C# project structure, add-in manifest, External Application/Command, JSON import flow, element creation (Levels→Walls→Floors→Rooms→Doors→Windows), FamilyFinder, round-trip sync, shared-parameter ID persistence | ✅ |
+| 11.4 Blender Python | `.py` script: box_mesh helper, room walls + Boolean Difference for hollow rooms + door/window cuts, Principled BSDF materials, top ortho + exterior perspective cameras, sun + area lights, EEVEE render preset, collections | ✅ |
+| 11.5 Rhino script strategy | `docs/integrations/rhino-strategy.md`: RhinoPython script structure, unit conversion strategy, Boolean Difference openings, Grasshopper data flow, custom GH cluster "Scotch Sync", plugin recommendations | ✅ |
+
+**Backend**: `sketchup` and `blender` added to `ExportFormat`; `POST /projects/{id}/exports/sketchup` → `floor_plan.rb`; `POST .../blender` → `floor_plan.py`.  
+**Frontend**: SketchUp (.rb) and Blender (.py) buttons in export panel with format tooltip.  
+**Tests**: 46 export tests (26 new for Phase 11); 175 total passing.
+
 **Accept:** DXF improved; .rb and .py exporters generate runnable scripts; Revit/Rhino strategy docs complete.
 
 ## Phase 12 — Presentation Sheet MVP — ⬜

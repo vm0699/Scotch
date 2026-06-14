@@ -2,6 +2,7 @@
 
 import {
   Braces,
+  Box,
   FileBox,
   FileCode2,
   FileImage,
@@ -51,11 +52,31 @@ function GhostRow({ label, width }: { label: string; width: string }) {
   );
 }
 
-const EXPORT_FORMATS: { label: string; fmt: ExportFormat; icon: React.ComponentType<{ className?: string }> }[] = [
+const EXPORT_FORMATS: {
+  label: string;
+  fmt: ExportFormat;
+  icon: React.ComponentType<{ className?: string }>;
+  ext?: string;
+  tooltip?: string;
+}[] = [
   { label: "JSON", fmt: "json", icon: Braces },
   { label: "SVG", fmt: "svg", icon: FileCode2 },
   { label: "PNG", fmt: "png", icon: FileImage },
   { label: "DXF", fmt: "dxf", icon: FileBox },
+  {
+    label: "SketchUp",
+    fmt: "sketchup",
+    icon: Box,
+    ext: ".rb",
+    tooltip: "Ruby script — run in SketchUp Extensions › Ruby Console",
+  },
+  {
+    label: "Blender",
+    fmt: "blender",
+    icon: Box,
+    ext: ".py",
+    tooltip: "Python script — run in Blender Scripting workspace",
+  },
 ];
 
 const WARNING_STYLES = {
@@ -161,8 +182,13 @@ function ExportSection({
   return (
     <div className="flex flex-col gap-2">
       <div className="grid grid-cols-2 gap-2">
-        {EXPORT_FORMATS.map(({ label, fmt, icon: Icon }) => {
+        {EXPORT_FORMATS.map(({ label, fmt, icon: Icon, ext, tooltip }) => {
           const busy = busyFmt === fmt;
+          const disabledTip = !canExport
+            ? storedId
+              ? "Generate a floor plan to enable exports"
+              : "Save the project first to enable exports"
+            : null;
           return (
             <Tooltip key={fmt}>
               <TooltipTrigger asChild>
@@ -179,15 +205,20 @@ function ExportSection({
                     ) : (
                       <Icon className="size-3.5 text-muted-foreground" />
                     )}
-                    {label}
+                    <span className="truncate">
+                      {label}
+                      {ext && (
+                        <span className="ml-1 text-[10px] text-muted-foreground/60">
+                          {ext}
+                        </span>
+                      )}
+                    </span>
                   </Button>
                 </span>
               </TooltipTrigger>
-              {!canExport && (
+              {(disabledTip ?? tooltip) && (
                 <TooltipContent side="top">
-                  {storedId
-                    ? "Generate a floor plan to enable exports"
-                    : "Save the project first to enable exports"}
+                  {disabledTip ?? tooltip}
                 </TooltipContent>
               )}
             </Tooltip>
