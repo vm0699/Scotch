@@ -171,9 +171,19 @@ Status values: ✅ Done · 🔵 In progress · ⬜ Not started
 
 **Accept:** sheet exports with plan/title/schedule/notes; structured SVG layers; PDF print-ready board; API endpoints `POST /projects/{id}/exports/sheet_svg` and `sheet_pdf`; 191 tests passing.
 
-## Phase 13 — Architecture Intelligence MVP — ⬜
+## Phase 13 — Architecture Intelligence MVP — ✅ Done
 
-Stages: 13.1 spatial quality checks (room too small, bath far from bedroom, kitchen placement, ventilation, parking missing, circulation, outside-site, unused area) · 13.2 area calculations (site, built-up, rooms, carpet approx, circulation) · 13.3 optional vastu suggestions (toggle) · 13.4 room schedule export (JSON/CSV/table) · 13.5 intelligence panel UI.
+| Stage | Scope | Status |
+|---|---|---|
+| 13.1 Spatial quality checks | `spatial_checks.py`: room_too_small, bath_bedroom_proximity (>25 ft), ventilation (no window), bathroom_missing, parking_missing (≥2 beds), coverage ratio (over/under), circulation (no door access); 7 check functions → `run_spatial_checks()` | ✅ |
+| 13.2 Area calculations | `area_calculator.py`: site_area, built_up_area, carpet_area (×0.85), circulation_area, coverage_ratio %, floor_efficiency %; per-room RoomAreaEntry; `compute_areas()` | ✅ |
+| 13.3 Vastu suggestions | `vastu.py`: 8-direction compass from room centroid; rules for kitchen (SE), master bed (SW), bathroom (avoid NE), living (N/E), study (E/N), puja (NE), dining (W/E); entrance orientation check; `run_vastu_checks()` | ✅ |
+| 13.4 Room schedule export | `schedule_exporter.py`: `export_schedule_json()` and `export_schedule_csv()` with gross + carpet areas; `POST /projects/{id}/exports/schedule_json` → `room_schedule.json`; `schedule_csv` → `room_schedule.csv` | ✅ |
+| 13.5 Intelligence panel UI | `intelligence-section.tsx`: AreaCard (site/built/carpet/open, Coverage %, Efficiency %), Design Quality list (severity icons, "N more" expand), 🪔 Vastu Shastra toggle (refetches with vastu=true, amber on-state); added to DataPanel between Room Schedule and Exports; Schedule JSON + CSV buttons added to Exports section | ✅ |
+
+**API**: `GET /projects/{id}/intelligence?vastu=false` → IntelligenceReport (spatial_checks, area_summary, vastu_suggestions).  
+**Tests**: 36 new Phase 13 tests; 227 total passing, 0 TypeScript errors.
+
 **Accept:** warnings + area calcs + schedule export + optional vastu all working.
 
 ## Phase 14 — Revit Plugin MVP — ⬜

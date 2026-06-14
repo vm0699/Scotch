@@ -204,7 +204,19 @@ export function deleteProject(projectId: string): Promise<void> {
   return apiRequest("DELETE", `/projects/${projectId}`);
 }
 
-// ── Exports (Phase 7) ─────────────────────────────────────────────
+// ── Intelligence (Phase 13) ───────────────────────────────────────
+
+export type { IntelligenceReport, AreaSummary, SpatialCheck, VastuSuggestion } from "@/features/intelligence/types";
+
+export function getIntelligence(
+  projectId: string,
+  vastu = false,
+  signal?: AbortSignal,
+): Promise<import("@/features/intelligence/types").IntelligenceReport> {
+  return apiGet(`/projects/${projectId}/intelligence?vastu=${vastu}`, { signal });
+}
+
+// ── Exports (Phase 7 / 11 / 12 / 13) ────────────────────────────
 
 export type ExportFormat =
   | "json"
@@ -214,7 +226,9 @@ export type ExportFormat =
   | "sketchup"
   | "blender"
   | "sheet_svg"
-  | "sheet_pdf";
+  | "sheet_pdf"
+  | "schedule_json"
+  | "schedule_csv";
 
 export interface ExportManifest {
   filename: string;

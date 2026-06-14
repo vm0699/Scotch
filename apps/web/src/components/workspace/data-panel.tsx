@@ -6,6 +6,7 @@ import {
   FileBox,
   FileCode2,
   FileImage,
+  FileSpreadsheet,
   FileText,
   Info,
   Loader2,
@@ -20,6 +21,7 @@ import {
   PanelHeader,
   PanelSection,
 } from "@/components/layout/panel";
+import { IntelligenceSection } from "@/components/workspace/intelligence-section";
 import { ParameterEditor } from "@/components/workspace/parameter-editor";
 import { RoomEditor } from "@/components/workspace/room-editor";
 import { Button } from "@/components/ui/button";
@@ -109,6 +111,25 @@ const EXPORT_GROUPS: ExportGroup[] = [
         icon: FileText,
         ext: ".pdf",
         tooltip: "A3 print-ready board — place in InDesign or share directly",
+      },
+    ],
+  },
+  {
+    heading: "Room Schedule",
+    formats: [
+      {
+        label: "Schedule JSON",
+        fmt: "schedule_json",
+        icon: Braces,
+        ext: ".json",
+        tooltip: "Full room schedule with gross and carpet areas as JSON",
+      },
+      {
+        label: "Schedule CSV",
+        fmt: "schedule_csv",
+        icon: FileSpreadsheet,
+        ext: ".csv",
+        tooltip: "Room schedule as CSV — open in Excel or Google Sheets",
       },
     ],
   },
@@ -296,6 +317,7 @@ export function DataPanel({
 }) {
   const selectedRoom =
     project?.rooms.find((r) => r.id === selectedRoomId) ?? null;
+  const unitLabel = project?.units === "meters" ? "m" : "ft";
 
   return (
     <Panel>
@@ -369,6 +391,10 @@ export function DataPanel({
               ))}
             </div>
           )}
+        </PanelSection>
+
+        <PanelSection title="Intelligence">
+          <IntelligenceSection projectId={storedId} unit={unitLabel} />
         </PanelSection>
 
         <PanelSection title="Exports">

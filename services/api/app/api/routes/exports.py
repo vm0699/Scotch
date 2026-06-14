@@ -1,4 +1,4 @@
-"""Export API — Phase 7 + 11 (software adapters) + 12 (presentation sheets).
+"""Export API — Phase 7 + 11 (software adapters) + 12 (presentation sheets) + 13 (schedule).
 
 POST /projects/{id}/exports/{format}  → run exporter, save file, append manifest,
                                         return ExportManifest entry.
@@ -6,6 +6,7 @@ GET  /projects/{id}/exports           → list manifest entries.
 GET  /projects/{id}/exports/{filename}→ FileResponse download.
 
 format ∈ json | svg | png | dxf | sketchup | blender | sheet_svg | sheet_pdf
+        | schedule_json | schedule_csv
 """
 
 from datetime import datetime, timezone
@@ -20,6 +21,8 @@ from app.core.exports import (
     export_dxf,
     export_json,
     export_png,
+    export_schedule_csv,
+    export_schedule_json,
     export_sheet_pdf,
     export_sheet_svg,
     export_sketchup,
@@ -37,6 +40,7 @@ ExportFormat = Literal[
     "json", "svg", "png", "dxf",
     "sketchup", "blender",
     "sheet_svg", "sheet_pdf",
+    "schedule_json", "schedule_csv",
 ]
 
 _MIME = {
@@ -49,25 +53,30 @@ _MIME = {
     "rb":        "text/plain",
     "py":        "text/x-python",
     "pdf":       "application/pdf",
+    "csv":       "text/csv",
 }
 
 router = APIRouter(prefix="/projects", tags=["exports"])
 
 
 _EXT = {
-    "json":      "json",
-    "svg":       "svg",
-    "png":       "png",
-    "dxf":       "dxf",
-    "sketchup":  "rb",
-    "blender":   "py",
-    "sheet_svg": "svg",
-    "sheet_pdf": "pdf",
+    "json":          "json",
+    "svg":           "svg",
+    "png":           "png",
+    "dxf":           "dxf",
+    "sketchup":      "rb",
+    "blender":       "py",
+    "sheet_svg":     "svg",
+    "sheet_pdf":     "pdf",
+    "schedule_json": "json",
+    "schedule_csv":  "csv",
 }
 
 _BASENAME = {
-    "sheet_svg": "presentation_sheet",
-    "sheet_pdf": "presentation_sheet",
+    "sheet_svg":     "presentation_sheet",
+    "sheet_pdf":     "presentation_sheet",
+    "schedule_json": "room_schedule",
+    "schedule_csv":  "room_schedule",
 }
 
 
@@ -121,6 +130,10 @@ def trigger_export(
         export_sheet_svg(project, output_path)
     elif fmt == "sheet_pdf":
         export_sheet_pdf(project, output_path)
+    elif fmt == "schedule_json":
+        export_schedule_json(project, output_path)
+    elif fmt == "schedule_csv":
+        export_schedule_csv(project, output_path)
 
     manifest = ExportManifest(
         filename=filename,
