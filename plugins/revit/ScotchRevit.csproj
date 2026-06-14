@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>ScotchRevit</AssemblyName>
+    <RootNamespace>ScotchRevit</RootNamespace>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <!--
+      Set REVIT_PATH to your Revit installation, e.g.:
+        C:\Program Files\Autodesk\Revit 2024
+      If unset, the RevitApiStubs NuGet is used for CI builds.
+    -->
+    <RevitPath Condition="'$(REVIT_PATH)' != ''">$(REVIT_PATH)</RevitPath>
+    <RevitPath Condition="'$(REVIT_PATH)' == ''">C:\Program Files\Autodesk\Revit 2024</RevitPath>
+  </PropertyGroup>
+
+  <!-- Real Revit DLLs (local dev with Revit installed) -->
+  <ItemGroup Condition="Exists('$(RevitPath)\RevitAPI.dll')">
+    <Reference Include="RevitAPI">
+      <HintPath>$(RevitPath)\RevitAPI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="RevitAPIUI">
+      <HintPath>$(RevitPath)\RevitAPIUI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Stub package for CI / machines without Revit -->
+  <ItemGroup Condition="!Exists('$(RevitPath)\RevitAPI.dll')">
+    <PackageReference Include="Revit_All_Main_Versions_API_x64" Version="2024.0.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- System.Text.Json for .NET 4.8 -->
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="6.0.10" />
+  </ItemGroup>
+
+</Project>

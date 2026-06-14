@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Revit add-in manifest for Scotch.
+  Deploy to: %APPDATA%\Autodesk\Revit\Addins\2024\ScotchRevit.addin
+  The Assembly path below should point to the built ScotchRevit.dll.
+-->
+<RevitAddIns>
+
+  <AddIn Type="Application">
+    <Name>Scotch</Name>
+    <Assembly>ScotchRevit.dll</Assembly>
+    <FullClassName>ScotchRevit.App</FullClassName>
+    <ClientId>A1B2C3D4-0000-0000-0000-SCOTCH000001</ClientId>
+    <VendorId>SCOTCH</VendorId>
+    <VendorDescription>Scotch — AI-native architecture design platform</VendorDescription>
+  </AddIn>
+
+  <AddIn Type="Command">
+    <Name>Scotch Import</Name>
+    <Assembly>ScotchRevit.dll</Assembly>
+    <FullClassName>ScotchRevit.Commands.ImportCommand</FullClassName>
+    <ClientId>A1B2C3D4-0000-0000-0000-SCOTCH000002</ClientId>
+    <VendorId>SCOTCH</VendorId>
+    <VendorDescription>Import a Scotch floor plan from JSON</VendorDescription>
+  </AddIn>
+
+  <AddIn Type="Command">
+    <Name>Scotch Sync</Name>
+    <Assembly>ScotchRevit.dll</Assembly>
+    <FullClassName>ScotchRevit.Commands.SyncCommand</FullClassName>
+    <ClientId>A1B2C3D4-0000-0000-0000-SCOTCH000003</ClientId>
+    <VendorId>SCOTCH</VendorId>
+    <VendorDescription>Sync Revit changes back to Scotch</VendorDescription>
+  </AddIn>
+
+</RevitAddIns>

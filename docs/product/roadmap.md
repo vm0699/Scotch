@@ -186,10 +186,21 @@ Status values: ✅ Done · 🔵 In progress · ⬜ Not started
 
 **Accept:** warnings + area calcs + schedule export + optional vastu all working.
 
-## Phase 14 — Revit Plugin MVP — ⬜
+## Phase 14 — Revit Plugin MVP — ✅ Done
 
-Stages: 14.1 C# add-in project setup · 14.2 JSON import · 14.3 element creation (levels, walls, floors, rooms, door/window placeholders) · 14.4 mapping documentation · 14.5 roundtrip strategy.
-**Accept:** PoC add-in imports Scotch JSON, creates basic elements; mapping documented. (Live test requires Revit installed.)
+| Stage | Scope | Status |
+|---|---|---|
+| 14.1 C# add-in project setup | `ScotchRevit.csproj` (net48/x64, `System.Text.Json` v6.0.10); `ScotchRevit.addin` XML manifest; `App.cs` IExternalApplication with "Scotch" ribbon panel + Import/Sync buttons | ✅ |
+| 14.2 JSON import | `Models/ArchitectureProject.cs` — all DTOs with `[JsonPropertyName]`; `Commands/ImportCommand.cs` — file picker → `JsonSerializer.Deserialize` → `Transaction` → `ElementMapper.Import` → result dialog | ✅ |
+| 14.3 Element creation | `Mapping/CoordinateConverter.cs` — unit conversion + wall/opening/centroid geometry; `Mapping/FamilyFinder.cs` — width-matched door/window symbols; `Mapping/WallResolver.cs` — (roomId:side → ElementId); `Mapping/ElementMapper.cs` — Levels → WallType/FloorType → Walls (deduped via segment key) → Floors → Rooms → Doors → Windows; `ImportResult` summary | ✅ |
+| 14.4 Mapping documentation | `docs/integrations/revit-mapping.md` — coordinate system, element creation order, field-level mapping tables, wall dedup detail, FamilyFinder algorithm, ScotchId shared param setup, known limitations | ✅ |
+| 14.5 Round-trip sync | `Commands/SyncCommand.cs` — FilteredElementCollector rooms → BoundingBoxXYZ → RoomDto patch payload; `Services/ScotchClient.cs` — `GetProject` / `PatchProject` / `IsReachable` via `HttpClient` to `localhost:8000` | ✅ |
+
+**Files**: `plugins/revit/` — `ScotchRevit.csproj`, `ScotchRevit.addin`, `App.cs`, `Models/ArchitectureProject.cs`, `Mapping/{CoordinateConverter,FamilyFinder,WallResolver,ElementMapper}.cs`, `Commands/{ImportCommand,SyncCommand}.cs`, `Services/ScotchClient.cs`; `docs/integrations/revit-mapping.md`.
+
+**Build**: `dotnet build plugins/revit/ScotchRevit.csproj -c Release` (requires Revit 2024 SDK or `REVIT_PATH` env var pointing to Revit install).  
+**Install**: copy `.dll` + `.addin` to `%APPDATA%\Autodesk\Revit\Addins\2024\`.  
+**Accept:** PoC add-in imports Scotch JSON, creates Levels/Walls/Floors/Rooms/Doors/Windows; round-trip sync PATCH back to Scotch backend; mapping fully documented. (Live test requires Revit installed.)
 
 ## Phase 15 — SketchUp Plugin MVP — ⬜
 

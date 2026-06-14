@@ -221,7 +221,7 @@ export function PreviewPanel({
   const plan = project ? planPixelSize(project) : null;
 
   return (
-    <Panel>
+    <Panel className="flex-1 min-h-0">
       <PanelHeader
         title={
           <div className="flex rounded-lg bg-muted p-0.5">
