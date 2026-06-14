@@ -1,19 +1,19 @@
-"""Stage 11.2 — SketchUp Ruby script exporter.
+"""Phase 11.2 / 15.1 — SketchUp Ruby script exporter (hardened).
 
 Generates a runnable SketchUp Ruby (.rb) file from an ArchitectureProject.
 
-Approach:
-  - Each room → a SketchUp group containing two faces at Z=0 (outer wall
-    boundary + inner room boundary). SketchUp treats the gap as a "washer"
-    face which, when pushpull'd to wall height, creates hollow walls.
-  - Floor slab: outer wall boundary face at Z=−SLAB_T pushed to +SLAB_T.
-  - Materials keyed by room type.
-  - Tags (layers): S-SITE, S-ROOMS, S-ROOF.
-  - Doors/windows: floor-level swing/sill markers + comment dimensions.
+Phase 15.1 improvements over Phase 11:
+  - Model units set to feet via UnitsOptions.
+  - Room groups named "Name [room_id]" so each group is uniquely identifiable.
+  - S-LABELS tag + 3D text labels at room centroids.
+  - Real door voids: vertical faces drawn on the inner wall surface + pushpull
+    through wall thickness instead of floor-level plan markers.
+  - Window voids: same approach but elevated between SILL_H and SILL_H+WIN_H.
+  - Balanced Ruby `def`/`end` blocks (smoke-parseable).
 
 Coordinate mapping:
   Plan x  → SketchUp X (right)
-  Plan y  → SketchUp Y (Y in SketchUp is the "forward" axis from top view)
+  Plan y  → SketchUp Y (forward in top view)
   Height  → SketchUp Z (up)
   Unit: feet converted to inches (×12) for SketchUp internal units.
 """
@@ -23,12 +23,12 @@ from pathlib import Path
 
 from app.core.models import ArchitectureProject, Room
 
-WALL_T = 0.5   # ft — wall half-thickness on each side
-SLAB_T = 0.5   # ft — floor slab thickness (below z=0)
+WALL_T = 0.5   # ft — total wall thickness (0.25 ft per side)
+SLAB_T = 0.5   # ft — floor / roof slab thickness
 SILL_H = 2.5   # ft — window sill height
 WIN_H  = 4.0   # ft — window opening height
 
-# Room-type to (R,G,B) material colour
+# Room-type → (R,G,B) material colour
 _ROOM_COLOURS: dict[str, tuple[int, int, int]] = {
     "living":         (235, 225, 205),
     "dining":         (235, 228, 210),
@@ -57,6 +57,39 @@ def _room_colour(room: Room) -> tuple[int, int, int]:
     return _ROOM_COLOURS.get(t, _DEFAULT_COLOUR)
 
 
+def _door_void_pts(room: Room, wall: str, off: float, wid: float,
+                   z_bot: float, z_top: float) -> list[tuple[float, float, float]] | None:
+    """Return 4 (x,y,z) points in feet for a vertical opening face on *wall*.
+
+    The winding order is chosen so that pushpull(WALL_T*FT) goes toward the
+    exterior (i.e. cuts through the wall). Returns None for unknown wall names.
+
+    North wall: inner face at y=room.y, normal −Y → pushpull cuts northward.
+    South wall: inner face at y=room.y+room.depth, normal +Y → cuts southward.
+    East  wall: inner face at x=room.x+room.width,  normal +X → cuts eastward.
+    West  wall: inner face at x=room.x,              normal −X → cuts westward.
+    """
+    rx, ry = room.x, room.y
+    rw, rd = room.width, room.depth
+    if wall == "north":
+        x0, x1 = rx + off, rx + off + wid
+        y = ry
+        return [(x0, y, z_bot), (x1, y, z_bot), (x1, y, z_top), (x0, y, z_top)]
+    if wall == "south":
+        x0, x1 = rx + off, rx + off + wid
+        y = ry + rd
+        return [(x0, y, z_bot), (x0, y, z_top), (x1, y, z_top), (x1, y, z_bot)]
+    if wall == "east":
+        y0, y1 = ry + off, ry + off + wid
+        x = rx + rw
+        return [(x, y0, z_bot), (x, y1, z_bot), (x, y1, z_top), (x, y0, z_top)]
+    if wall == "west":
+        y0, y1 = ry + off, ry + off + wid
+        x = rx
+        return [(x, y0, z_bot), (x, y0, z_top), (x, y1, z_top), (x, y1, z_bot)]
+    return None
+
+
 def export_sketchup(project: ArchitectureProject, output_path: Path) -> bytes:
     """Generate a SketchUp Ruby (.rb) script for *project* and write to *output_path*."""
     lines: list[str] = []
@@ -68,7 +101,7 @@ def export_sketchup(project: ArchitectureProject, output_path: Path) -> bytes:
 
     # ── Header ────────────────────────────────────────────────────────────────
     L("# " + "=" * 77)
-    L(f"# Scotch — SketchUp Ruby Import Script")
+    L("# Scotch — SketchUp Ruby Import Script  (Phase 15.1 hardened)")
     L(f"# Project : {project.name or 'Untitled'}")
     L(f"# Generated: {stamp}")
     L(f"# Units    : {unit}  (converted to SketchUp inches: × 12)")
@@ -77,7 +110,7 @@ def export_sketchup(project: ArchitectureProject, output_path: Path) -> bytes:
     L("#")
     L("# How to run:")
     L("#   Extensions > Ruby Console > paste this script and press Enter.")
-    L("#   — OR — save as a .rb file and run: Extensions > Script Editor > Open.")
+    L("#   — OR — File > Import > scotch_extension (Phase 15.2).")
     L("# " + "=" * 77)
     L("")
     L("require 'sketchup'")
@@ -91,9 +124,15 @@ def export_sketchup(project: ArchitectureProject, output_path: Path) -> bytes:
     L("model.start_operation('Scotch Import', true)")
     L("")
 
-    # ── Constants ────────────────────────────────────────────────────────────
+    # ── Set model units to feet ───────────────────────────────────────────────
+    L("# Set model units to feet")
+    L("opts = model.options['UnitsOptions']")
+    L("opts['LengthUnit'] = 1 if opts  # 1 = feet in SketchUp")
+    L("")
+
+    # ── Constants ─────────────────────────────────────────────────────────────
     L("# Project constants (all in SketchUp inches)")
-    L(f"FT     = 12.0")
+    L("FT     = 12.0")
     L(f"WALL_H = {fh} * FT   # floor-to-ceiling height")
     L(f"WALL_T = {WALL_T} * FT   # wall half-thickness per side")
     L(f"SLAB_T = {SLAB_T} * FT   # floor slab thickness")
@@ -101,8 +140,7 @@ def export_sketchup(project: ArchitectureProject, output_path: Path) -> bytes:
     L(f"WIN_H  = {WIN_H} * FT    # window opening height")
     L("")
 
-    # ── Helper: material ────────────────────────────────────────────────────
-    L("# Helper: ensure a material exists with given RGB")
+    # ── Helper: material ──────────────────────────────────────────────────────
     L("def scotch_mat(mats, name, r, g, b, alpha = 255)")
     L("  m = mats[name] || mats.add(name)")
     L("  m.color = Sketchup::Color.new(r, g, b, alpha)")
@@ -110,31 +148,29 @@ def export_sketchup(project: ArchitectureProject, output_path: Path) -> bytes:
     L("end")
     L("")
 
-    # ── Helper: tag (layer) ──────────────────────────────────────────────────
-    L("# Helper: ensure a tag (layer) exists")
+    # ── Helper: tag (layer) ───────────────────────────────────────────────────
     L("def scotch_tag(model, name)")
     L("  model.layers[name] || model.layers.add(name)")
     L("end")
     L("")
 
-    # ── Tags ─────────────────────────────────────────────────────────────────
+    # ── Tags ──────────────────────────────────────────────────────────────────
     L("# Tags")
-    L("tag_site  = scotch_tag(model, 'S-SITE')")
-    L("tag_rooms = scotch_tag(model, 'S-ROOMS')")
-    L("tag_roof  = scotch_tag(model, 'S-ROOF')")
-    L("tag_open  = scotch_tag(model, 'S-OPENINGS')")
+    L("tag_site   = scotch_tag(model, 'S-SITE')")
+    L("tag_rooms  = scotch_tag(model, 'S-ROOMS')")
+    L("tag_roof   = scotch_tag(model, 'S-ROOF')")
+    L("tag_open   = scotch_tag(model, 'S-OPENINGS')")
+    L("tag_labels = scotch_tag(model, 'S-LABELS')")
     L("")
 
     # ── Materials ─────────────────────────────────────────────────────────────
-    L("# Materials")
+    L("# Base materials")
     L("mat_ground = scotch_mat(mats, 'Scotch_Ground',  210, 210, 200)")
     L("mat_wall   = scotch_mat(mats, 'Scotch_Wall',    245, 242, 238)")
     L("mat_roof   = scotch_mat(mats, 'Scotch_Roof',    175, 168, 158)")
     L("mat_glass  = scotch_mat(mats, 'Scotch_Glass',   180, 215, 245, 160)")
     L("")
     L("ROOM_MAT = {}")
-
-    # Collect unique room types
     seen: set[str] = set()
     for room in project.rooms:
         t = room.type.lower().replace(" ", "_")
@@ -167,16 +203,14 @@ def export_sketchup(project: ArchitectureProject, output_path: Path) -> bytes:
 
     # ── Rooms ─────────────────────────────────────────────────────────────────
     L("# ── Rooms ────────────────────────────────────────────────────────────────")
-    L("# Each room group contains an outer wall-boundary face and an inner")
-    L("# room-interior face at Z=0. SketchUp turns the gap into a 'washer'")
-    L("# (face with hole). Pushpulling the washer creates hollow walls.")
-    L("# The floor face (inner boundary) receives the room material.")
+    L("# Washer technique: outer boundary face + inner room face at Z=0.")
+    L("# SketchUp treats the gap as a washer; pushpull creates hollow walls.")
+    L("# Door/window voids: vertical faces on inner wall surface + pushpull.")
     L("")
 
-    rooms_by_id = {r.id: r for r in project.rooms}
+    half = WALL_T / 2
 
     for idx, room in enumerate(project.rooms):
-        half = WALL_T / 2
         ox = room.x - half
         oy = room.y - half
         ow = room.width + WALL_T
@@ -184,77 +218,75 @@ def export_sketchup(project: ArchitectureProject, output_path: Path) -> bytes:
         t = room.type.lower().replace(" ", "_")
         mat_key = f"ROOM_MAT['{t}'] || mat_wall"
 
-        L(f"# --- {room.name} ---")
+        L(f"# --- {room.name} [{room.id}] ---")
         L(f"rg = entities.add_group")
         L(f"rg.layer = tag_rooms")
-        L(f"rg.name  = {repr(room.name)}")
+        L(f"rg.name  = {repr(f'{room.name} [{room.id}]')}")
         L(f"re = rg.entities")
         L("")
-        # Outer face (wall boundary)
-        L(f"# Outer wall boundary (includes {WALL_T}ft wall thickness each side)")
+
+        # Outer wall boundary face
+        L(f"# Outer wall boundary")
         L(f"re.add_face([")
-        L(f"  Geom::Point3d.new({ox} * FT,  {oy} * FT,  0),")
-        L(f"  Geom::Point3d.new({ox + ow} * FT,  {oy} * FT,  0),")
-        L(f"  Geom::Point3d.new({ox + ow} * FT,  {oy + od} * FT,  0),")
-        L(f"  Geom::Point3d.new({ox} * FT,        {oy + od} * FT,  0),")
+        L(f"  Geom::Point3d.new({ox} * FT,         {oy} * FT,         0),")
+        L(f"  Geom::Point3d.new({ox + ow} * FT,    {oy} * FT,         0),")
+        L(f"  Geom::Point3d.new({ox + ow} * FT,    {oy + od} * FT,    0),")
+        L(f"  Geom::Point3d.new({ox} * FT,         {oy + od} * FT,    0),")
         L(f"])")
         L("")
-        # Inner face (room interior — creates washer with outer face)
-        L(f"# Inner room interior (adds hole in outer face → washer shape)")
+
+        # Inner room floor face (creates washer with outer face)
+        L(f"# Inner room floor — washer gap → hollow walls when pushpull'd")
         L(f"inner_face = re.add_face([")
         L(f"  Geom::Point3d.new({room.x} * FT,              {room.y} * FT,              0),")
         L(f"  Geom::Point3d.new({room.x + room.width} * FT,  {room.y} * FT,              0),")
-        L(f"  Geom::Point3d.new({room.x + room.width} * FT,  {room.y + room.depth} * FT,  0),")
+        L(f"  Geom::Point3d.new({room.x + room.width} * FT,  {room.y + room.depth} * FT, 0),")
         L(f"  Geom::Point3d.new({room.x} * FT,              {room.y + room.depth} * FT,  0),")
         L(f"])")
-        L(f"inner_face.material = {mat_key}  # room-type colour")
+        L(f"inner_face.material = {mat_key} if inner_face")
         L("")
-        L(f"# Find the washer face (the larger face containing the hole) and extrude")
+
+        # Pushpull washer to wall height
         L(f"washer = re.select {{ |e| e.is_a?(Sketchup::Face) && e.area > inner_face.area * 1.5 rescue false }}.first")
         L(f"washer.pushpull(WALL_H) if washer")
         L("")
 
-        # Door opening markers
+        # Door voids — vertical faces on inner wall surface + pushpull through
         room_doors = [d for d in project.doors if d.room_id == room.id]
-        room_wins  = [w for w in project.windows if w.room_id == room.id]
-
         if room_doors:
-            L(f"  # Door openings — draw floor markers and pushpull to cut walls manually")
+            L(f"# Door voids — vertical opening faces on wall inner surface")
             for di, door in enumerate(room_doors, start=1):
-                wall = door.wall
-                off  = door.offset
-                wid  = door.width
-                # Compute door face corners in plan space → SketchUp (flat at Z=0)
-                if wall == "north":
-                    x0, y0 = room.x + off, room.y - half
-                    x1, y1 = room.x + off + wid, room.y + half
-                elif wall == "south":
-                    x0, y0 = room.x + off, room.y + room.depth - half
-                    x1, y1 = room.x + off + wid, room.y + room.depth + half
-                elif wall == "west":
-                    x0, y0 = room.x - half, room.y + off
-                    x1, y1 = room.x + half, room.y + off + wid
-                else:  # east
-                    x0, y0 = room.x + room.width - half, room.y + off
-                    x1, y1 = room.x + room.width + half, room.y + off + wid
-
-                L(f"  # Door {di}: wall={wall}, offset={off}ft, width={wid}ft")
-                L(f"  # Pushpull this face through the wall to cut a full-height opening:")
-                L(f"  door_pts_{idx}_{di} = [")
-                L(f"    Geom::Point3d.new({x0} * FT, {y0} * FT, 0),")
-                L(f"    Geom::Point3d.new({x1} * FT, {y0} * FT, 0),")
-                L(f"    Geom::Point3d.new({x1} * FT, {y1} * FT, 0),")
-                L(f"    Geom::Point3d.new({x0} * FT, {y1} * FT, 0),")
-                L(f"  ]")
-                L(f"  door_face_{idx}_{di} = re.add_face(door_pts_{idx}_{di}) rescue nil")
-                L(f"  door_face_{idx}_{di}.material = mat_glass if door_face_{idx}_{di}")
+                pts = _door_void_pts(room, door.wall, door.offset, door.width, 0, fh)
+                if pts is None:
+                    continue
+                var = f"door_{idx}_{di}"
+                L(f"# Door {di}: wall={door.wall}, offset={door.offset}ft, width={door.width}ft")
+                L(f"{var}_pts = [")
+                for px, py, pz in pts:
+                    L(f"  Geom::Point3d.new({px} * FT, {py} * FT, {pz} * FT),")
+                L(f"]")
+                L(f"{var} = re.add_face({var}_pts) rescue nil")
+                L(f"{var}.pushpull(WALL_T) rescue nil  # cuts through wall toward exterior")
                 L("")
 
+        # Window voids — same approach but between SILL_H and SILL_H+WIN_H
+        room_wins = [w for w in project.windows if w.room_id == room.id]
         if room_wins:
-            L(f"  # Window openings (sill {SILL_H}ft, height {WIN_H}ft)")
+            L(f"# Window voids — vertical opening faces at sill height")
             for wi, win in enumerate(room_wins, start=1):
-                L(f"  # Window {wi}: wall={win.wall}, offset={win.offset}ft, width={win.width}ft")
-            L("")
+                pts = _door_void_pts(room, win.wall, win.offset, win.width, SILL_H, SILL_H + WIN_H)
+                if pts is None:
+                    continue
+                var = f"win_{idx}_{wi}"
+                L(f"# Window {wi}: wall={win.wall}, offset={win.offset}ft, width={win.width}ft")
+                L(f"{var}_pts = [")
+                for px, py, pz in pts:
+                    L(f"  Geom::Point3d.new({px} * FT, {py} * FT, {pz} * FT),")
+                L(f"]")
+                L(f"{var} = re.add_face({var}_pts) rescue nil")
+                L(f"{var}.pushpull(WALL_T) rescue nil")
+                L(f"{var}.material = mat_glass rescue nil  # glass pane")
+                L("")
 
     # ── Roof slab ─────────────────────────────────────────────────────────────
     L("# ── Roof Slab ────────────────────────────────────────────────────────────")
@@ -273,6 +305,20 @@ def export_sketchup(project: ArchitectureProject, output_path: Path) -> bytes:
     L("roof_face.pushpull(SLAB_T)")
     L("")
 
+    # ── Room labels ───────────────────────────────────────────────────────────
+    L("# ── Room Labels (S-LABELS tag) ───────────────────────────────────────────")
+    L("lbl_grp       = entities.add_group")
+    L("lbl_grp.layer = tag_labels")
+    L("lbl_grp.name  = 'Room Labels'")
+    L("le = lbl_grp.entities")
+    for room in project.rooms:
+        cx = room.x + room.width / 2
+        cy = room.y + room.depth / 2
+        area_str = f"{room.width * room.depth:.0f} ft²"
+        label = f"{room.name}\\n{area_str}"
+        L(f"le.add_text({repr(label)}, Geom::Point3d.new({cx} * FT, {cy} * FT, 0.1 * FT)) rescue nil")
+    L("")
+
     # ── Finish ────────────────────────────────────────────────────────────────
     L("model.commit_operation")
     L("")
@@ -286,9 +332,9 @@ def export_sketchup(project: ArchitectureProject, output_path: Path) -> bytes:
     L("model.active_view.zoom_extents")
     L("")
     L("UI.messagebox('Scotch floor plan imported successfully!\\n\\n" +
-      "Tips:\\n• Use the Paint Bucket tool to adjust room materials.\\n" +
-      "• Cut door openings: draw a rectangle on the wall face and pushpull through.\\n" +
-      "• Run Extensions > Solid Inspector to fix any geometry issues.')")
+      "Tips:\\n• Room groups are named <Room Name> [id] in the Outliner.\\n" +
+      "• Toggle S-LABELS tag to show/hide room text labels.\\n" +
+      "• Use Extensions > Scotch Importer for future imports (Phase 15.2).')")
     L("")
 
     content = "\n".join(lines)

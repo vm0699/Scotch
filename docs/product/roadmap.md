@@ -202,9 +202,20 @@ Status values: ✅ Done · 🔵 In progress · ⬜ Not started
 **Install**: copy `.dll` + `.addin` to `%APPDATA%\Autodesk\Revit\Addins\2024\`.  
 **Accept:** PoC add-in imports Scotch JSON, creates Levels/Walls/Floors/Rooms/Doors/Windows; round-trip sync PATCH back to Scotch backend; mapping fully documented. (Live test requires Revit installed.)
 
-## Phase 15 — SketchUp Plugin MVP — ⬜
+## Phase 15 — SketchUp Plugin MVP — ✅ Done
 
-Stages: 15.1 Ruby script improvement · 15.2 extension shell · 15.3 JSON import · 15.4 model creation (slabs/walls/doors/windows/labels/groups/materials) · 15.5 workflow documentation.
+| Stage | Scope | Status |
+|---|---|---|
+| 15.1 Ruby script improvement | Hardened exporter: vertical door/window void faces + pushpull (all 4 wall directions), S-LABELS tag, 3D text labels, room group names embed `room_id`, model units set to feet, balanced `def`/`end` | ✅ |
+| 15.2 Extension shell | `integrations/sketchup/scotch_importer.rb` + `scotch/main.rb`; `SketchupExtension` registration, toolbar button + menu item; `GET /integrations/sketchup/extension` → `.rbz` zip; `GET /integrations/sketchup/extension/files`; frontend SketchUp extension help card in export panel | ✅ |
+| 15.3 JSON import | `integrations/sketchup/scotch/importer.rb`: `UI.openpanel` file picker, JSON parse, REQUIRED_KEYS validation, `UI.messagebox` on any error (missing keys, parse failure, empty rooms) | ✅ |
+| 15.4 Model creation | `integrations/sketchup/scotch/builder.rb`: ground slab, hollow walls (washer pushpull), door/window voids (vertical faces + pushpull through wall, all 4 wall directions), 3D text labels at room centroids, per-type materials, groups named `<Room> [id]`, tags S-SITE/S-ROOMS/S-ROOF/S-LABELS/S-OPENINGS, camera | ✅ |
+| 15.5 Workflow documentation | `docs/integrations/sketchup-workflow.md`: Option A (one-shot .rb) + Option B (extension); install, import, edit, troubleshooting table, version matrix, future sync note | ✅ |
+
+**Backend**: `GET /integrations/sketchup/extension` → `scotch_importer.rbz`; `GET /integrations/sketchup/extension/files` → manifest. Router registered in `main.py`.  
+**Frontend**: SketchUp extension help card in the Exports section of DataPanel.  
+**Tests**: 39 new Phase 15 tests; 283 total passing, 0 TypeScript errors.
+
 **Accept:** extension/script builds the model in SketchUp; documented.
 
 ## Phase 16 — Rhino / Grasshopper MVP — ✅ Done
