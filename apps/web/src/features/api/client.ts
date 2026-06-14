@@ -225,6 +225,7 @@ export type ExportFormat =
   | "dxf"
   | "sketchup"
   | "blender"
+  | "rhino"
   | "sheet_svg"
   | "sheet_pdf"
   | "schedule_json"

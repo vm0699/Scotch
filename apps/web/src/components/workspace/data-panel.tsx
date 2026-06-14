@@ -3,6 +3,7 @@
 import {
   Braces,
   Box,
+  ExternalLink,
   FileBox,
   FileCode2,
   FileImage,
@@ -92,6 +93,13 @@ const EXPORT_GROUPS: ExportGroup[] = [
         icon: Box,
         ext: ".py",
         tooltip: "Python script — run in Blender Scripting workspace",
+      },
+      {
+        label: "Rhino",
+        fmt: "rhino",
+        icon: Box,
+        ext: ".py",
+        tooltip: "RhinoPython script — run via Tools › PythonScript in Rhino 7+",
       },
     ],
   },
@@ -296,6 +304,26 @@ function ExportSection({
           {lastExport} downloaded.
         </p>
       )}
+
+      {/* SketchUp extension help affordance */}
+      <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+        <p className="text-[11px] font-medium text-foreground/80">
+          SketchUp Extension
+        </p>
+        <p className="mt-1 text-[11px] leading-4 text-muted-foreground/70">
+          Install the Scotch extension for one-click JSON import with full tags
+          and materials.{" "}
+          <a
+            href="/docs/integrations/sketchup-workflow"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-0.5 text-foreground/60 underline underline-offset-2 hover:text-foreground/90"
+          >
+            Workflow guide
+            <ExternalLink className="size-2.5" />
+          </a>
+        </p>
+      </div>
     </div>
   );
 }

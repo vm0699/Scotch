@@ -1,12 +1,12 @@
-"""Export API — Phase 7 + 11 (software adapters) + 12 (presentation sheets) + 13 (schedule).
+"""Export API — Phase 7 + 11 (software adapters) + 12 (presentation sheets) + 13 (schedule) + 16 (Rhino).
 
 POST /projects/{id}/exports/{format}  → run exporter, save file, append manifest,
                                         return ExportManifest entry.
 GET  /projects/{id}/exports           → list manifest entries.
 GET  /projects/{id}/exports/{filename}→ FileResponse download.
 
-format ∈ json | svg | png | dxf | sketchup | blender | sheet_svg | sheet_pdf
-        | schedule_json | schedule_csv
+format ∈ json | svg | png | dxf | sketchup | blender | rhino
+        | sheet_svg | sheet_pdf | schedule_json | schedule_csv
 """
 
 from datetime import datetime, timezone
@@ -21,6 +21,7 @@ from app.core.exports import (
     export_dxf,
     export_json,
     export_png,
+    export_rhino,
     export_schedule_csv,
     export_schedule_json,
     export_sheet_pdf,
@@ -38,7 +39,7 @@ from app.core.validation import validate_project
 
 ExportFormat = Literal[
     "json", "svg", "png", "dxf",
-    "sketchup", "blender",
+    "sketchup", "blender", "rhino",
     "sheet_svg", "sheet_pdf",
     "schedule_json", "schedule_csv",
 ]
@@ -66,6 +67,7 @@ _EXT = {
     "dxf":           "dxf",
     "sketchup":      "rb",
     "blender":       "py",
+    "rhino":         "py",
     "sheet_svg":     "svg",
     "sheet_pdf":     "pdf",
     "schedule_json": "json",
@@ -73,6 +75,7 @@ _EXT = {
 }
 
 _BASENAME = {
+    "rhino":         "floor_plan_rhino",
     "sheet_svg":     "presentation_sheet",
     "sheet_pdf":     "presentation_sheet",
     "schedule_json": "room_schedule",
@@ -126,6 +129,8 @@ def trigger_export(
         export_sketchup(project, output_path)
     elif fmt == "blender":
         export_blender(project, output_path)
+    elif fmt == "rhino":
+        export_rhino(project, output_path)
     elif fmt == "sheet_svg":
         export_sheet_svg(project, output_path)
     elif fmt == "sheet_pdf":

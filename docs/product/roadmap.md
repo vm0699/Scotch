@@ -207,10 +207,18 @@ Status values: ✅ Done · 🔵 In progress · ⬜ Not started
 Stages: 15.1 Ruby script improvement · 15.2 extension shell · 15.3 JSON import · 15.4 model creation (slabs/walls/doors/windows/labels/groups/materials) · 15.5 workflow documentation.
 **Accept:** extension/script builds the model in SketchUp; documented.
 
-## Phase 16 — Rhino / Grasshopper MVP — ⬜
+## Phase 16 — Rhino / Grasshopper MVP — ✅ Done
 
-Stages: 16.1 Rhino Python script export · 16.2 massing import · 16.3 Grasshopper parameter strategy · 16.4 parametric facade prototype (if feasible).
-**Accept:** Rhino workflow exists; GH strategy documented.
+| Stage | Scope | Status |
+|---|---|---|
+| 16.1 Rhino Python script export | `core/exports/rhino_exporter.py`; layers Scotch::Site/Walls/Doors/Windows/Labels/Roof; hollow room walls + BooleanDifference door/window openings; room text dots; `POST /projects/{id}/exports/rhino` → `floor_plan_rhino.py` | ✅ |
+| 16.2 Massing import | Walls extruded to `floor_height` (WALL_H); roof slab at WALL_H + SLAB_T; matches R3F viewer geometry; pytest assertions on height alignment | ✅ |
+| 16.3 Grasshopper parameter strategy | `docs/integrations/rhino-grasshopper-strategy.md` — full GH data flow, parameter table mapping each `Parameter.key` → GH input, Scotch Sync cluster spec, recommended plugins (Human/Pufferfish) | ✅ |
+| 16.4 Parametric facade prototype | `integrations/rhino/facade_prototype.py` — WWR-driven window grid, bay spacing, mullions, BooleanDifference voids, live summary output | ✅ |
+
+**Frontend:** "Rhino (.py)" button added to 3D Software export group (data-panel).  
+**Tests:** 18 pytest cases (test_rhino_export.py) — script validity, layers, BooleanDifference, massing height, roof, API flow.  
+**Accept:** Rhino script workflow exists; massing imports; GH strategy documented.
 
 ## Phase 17 — Rendering Workflow MVP — ⬜
 
