@@ -159,10 +159,17 @@ Status values: ✅ Done · 🔵 In progress · ⬜ Not started
 
 **Accept:** DXF improved; .rb and .py exporters generate runnable scripts; Revit/Rhino strategy docs complete.
 
-## Phase 12 — Presentation Sheet MVP — ⬜
+## Phase 12 — Presentation Sheet MVP — ✅ Done
 
-Stages: 12.1 sheet data model (title, info, plan viewport, notes, schedule, legend, concept text) · 12.2 SVG sheet export · 12.3 PDF sheet export · 12.4 Illustrator-friendly layering · 12.5 Photoshop/InDesign strategy (board templates, PNG assets, PDF package).
-**Accept:** sheet exports with plan/title/schedule/notes; structured SVG layers.
+| Stage | Scope | Status |
+|---|---|---|
+| 12.1 Sheet data model | `page_size`, `title`, `subtitle`, `architect`, `concept_text` params; A3/A2/A1 page sizes | ✅ |
+| 12.2 SVG sheet export | A3 landscape (420×297 mm viewBox); 7 Illustrator-compatible layer groups: `sheet-border`, `title-block`, `plan-viewport`, `schedule`, `legend`, `notes`, `footer`; north arrow; room schedule table; muted pastel room fills; `export_sheet_svg()` | ✅ |
+| 12.3 PDF sheet export | reportlab Canvas; same layout as SVG sheet; `_pt()` mm→points, `_yf()` top-down→bottom-up; `clipPath()` plan viewport clipping; `export_sheet_pdf()` | ✅ |
+| 12.4 Illustrator-friendly layering | Named `<g id="...">` groups map directly to Illustrator layers; XML export preserves editability | ✅ |
+| 12.5 Presentation strategy doc | `docs/integrations/presentation-sheets-strategy.md` — Illustrator SVG workflow, Photoshop Smart Object board template, InDesign multi-page layout, PDF/X-1a print spec | ✅ |
+
+**Accept:** sheet exports with plan/title/schedule/notes; structured SVG layers; PDF print-ready board; API endpoints `POST /projects/{id}/exports/sheet_svg` and `sheet_pdf`; 191 tests passing.
 
 ## Phase 13 — Architecture Intelligence MVP — ⬜
 

@@ -206,7 +206,15 @@ export function deleteProject(projectId: string): Promise<void> {
 
 // ── Exports (Phase 7) ─────────────────────────────────────────────
 
-export type ExportFormat = "json" | "svg" | "png" | "dxf" | "sketchup" | "blender";
+export type ExportFormat =
+  | "json"
+  | "svg"
+  | "png"
+  | "dxf"
+  | "sketchup"
+  | "blender"
+  | "sheet_svg"
+  | "sheet_pdf";
 
 export interface ExportManifest {
   filename: string;

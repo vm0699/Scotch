@@ -6,6 +6,7 @@ import {
   FileBox,
   FileCode2,
   FileImage,
+  FileText,
   Info,
   Loader2,
   ShieldCheck,
@@ -52,30 +53,64 @@ function GhostRow({ label, width }: { label: string; width: string }) {
   );
 }
 
-const EXPORT_FORMATS: {
-  label: string;
-  fmt: ExportFormat;
-  icon: React.ComponentType<{ className?: string }>;
-  ext?: string;
-  tooltip?: string;
-}[] = [
-  { label: "JSON", fmt: "json", icon: Braces },
-  { label: "SVG", fmt: "svg", icon: FileCode2 },
-  { label: "PNG", fmt: "png", icon: FileImage },
-  { label: "DXF", fmt: "dxf", icon: FileBox },
+type ExportGroup = {
+  heading?: string;
+  formats: {
+    label: string;
+    fmt: ExportFormat;
+    icon: React.ComponentType<{ className?: string }>;
+    ext?: string;
+    tooltip?: string;
+  }[];
+};
+
+const EXPORT_GROUPS: ExportGroup[] = [
   {
-    label: "SketchUp",
-    fmt: "sketchup",
-    icon: Box,
-    ext: ".rb",
-    tooltip: "Ruby script — run in SketchUp Extensions › Ruby Console",
+    heading: "Drawing Files",
+    formats: [
+      { label: "JSON", fmt: "json", icon: Braces },
+      { label: "SVG", fmt: "svg", icon: FileCode2 },
+      { label: "PNG", fmt: "png", icon: FileImage },
+      { label: "DXF", fmt: "dxf", icon: FileBox },
+    ],
   },
   {
-    label: "Blender",
-    fmt: "blender",
-    icon: Box,
-    ext: ".py",
-    tooltip: "Python script — run in Blender Scripting workspace",
+    heading: "3D Software",
+    formats: [
+      {
+        label: "SketchUp",
+        fmt: "sketchup",
+        icon: Box,
+        ext: ".rb",
+        tooltip: "Ruby script — run in SketchUp Extensions › Ruby Console",
+      },
+      {
+        label: "Blender",
+        fmt: "blender",
+        icon: Box,
+        ext: ".py",
+        tooltip: "Python script — run in Blender Scripting workspace",
+      },
+    ],
+  },
+  {
+    heading: "Presentation Sheets",
+    formats: [
+      {
+        label: "Sheet SVG",
+        fmt: "sheet_svg",
+        icon: FileCode2,
+        ext: ".svg",
+        tooltip: "A3 board — open in Illustrator; layers preserved",
+      },
+      {
+        label: "Sheet PDF",
+        fmt: "sheet_pdf",
+        icon: FileText,
+        ext: ".pdf",
+        tooltip: "A3 print-ready board — place in InDesign or share directly",
+      },
+    ],
   },
 ];
 
@@ -179,52 +214,62 @@ function ExportSection({
     }
   }
 
+  const disabledTip = !canExport
+    ? storedId
+      ? "Generate a floor plan to enable exports"
+      : "Save the project first to enable exports"
+    : null;
+
   return (
-    <div className="flex flex-col gap-2">
-      <div className="grid grid-cols-2 gap-2">
-        {EXPORT_FORMATS.map(({ label, fmt, icon: Icon, ext, tooltip }) => {
-          const busy = busyFmt === fmt;
-          const disabledTip = !canExport
-            ? storedId
-              ? "Generate a floor plan to enable exports"
-              : "Save the project first to enable exports"
-            : null;
-          return (
-            <Tooltip key={fmt}>
-              <TooltipTrigger asChild>
-                <span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={!canExport || busyFmt !== null}
-                    onClick={() => void handleExport(fmt)}
-                    className="w-full justify-start gap-2"
-                  >
-                    {busy ? (
-                      <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
-                    ) : (
-                      <Icon className="size-3.5 text-muted-foreground" />
-                    )}
-                    <span className="truncate">
-                      {label}
-                      {ext && (
-                        <span className="ml-1 text-[10px] text-muted-foreground/60">
-                          {ext}
+    <div className="flex flex-col gap-3">
+      {EXPORT_GROUPS.map((group) => (
+        <div key={group.heading} className="flex flex-col gap-1.5">
+          {group.heading && (
+            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
+              {group.heading}
+            </p>
+          )}
+          <div className="grid grid-cols-2 gap-2">
+            {group.formats.map(({ label, fmt, icon: Icon, ext, tooltip }) => {
+              const busy = busyFmt === fmt;
+              return (
+                <Tooltip key={fmt}>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={!canExport || busyFmt !== null}
+                        onClick={() => void handleExport(fmt)}
+                        className="w-full justify-start gap-2"
+                      >
+                        {busy ? (
+                          <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+                        ) : (
+                          <Icon className="size-3.5 text-muted-foreground" />
+                        )}
+                        <span className="truncate">
+                          {label}
+                          {ext && (
+                            <span className="ml-1 text-[10px] text-muted-foreground/60">
+                              {ext}
+                            </span>
+                          )}
                         </span>
-                      )}
+                      </Button>
                     </span>
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              {(disabledTip ?? tooltip) && (
-                <TooltipContent side="top">
-                  {disabledTip ?? tooltip}
-                </TooltipContent>
-              )}
-            </Tooltip>
-          );
-        })}
-      </div>
+                  </TooltipTrigger>
+                  {(disabledTip ?? tooltip) && (
+                    <TooltipContent side="top">
+                      {disabledTip ?? tooltip}
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              );
+            })}
+          </div>
+        </div>
+      ))}
       {lastExport && (
         <p className="text-[11px] text-muted-foreground">
           {lastExport} downloaded.

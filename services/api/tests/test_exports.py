@@ -441,3 +441,131 @@ def test_api_download_blender(client, project_with_design):
     r = client.get(f"/projects/{project_with_design}/exports/floor_plan.py")
     assert r.status_code == 200
     assert b"import bpy" in r.content
+
+
+# ── 12.1 Sheet SVG exporter ──────────────────────────────────────────────────
+
+
+def test_sheet_svg_writes_file(tmp_path, sample):
+    from app.core.exports import export_sheet_svg
+    out = tmp_path / "presentation_sheet.svg"
+    export_sheet_svg(sample, out)
+    assert out.exists()
+    assert out.stat().st_size > 1000
+
+
+def test_sheet_svg_returns_bytes(tmp_path, sample):
+    from app.core.exports import export_sheet_svg
+    out = tmp_path / "presentation_sheet.svg"
+    result = export_sheet_svg(sample, out)
+    assert isinstance(result, bytes)
+
+
+def test_sheet_svg_is_valid_xml(tmp_path, sample):
+    import xml.etree.ElementTree as ET
+    from app.core.exports import export_sheet_svg
+    out = tmp_path / "presentation_sheet.svg"
+    data = export_sheet_svg(sample, out)
+    root = ET.fromstring(data.decode("utf-8"))
+    assert root.tag.endswith("svg")
+
+
+def test_sheet_svg_has_all_layer_groups(tmp_path, sample):
+    from app.core.exports import export_sheet_svg
+    out = tmp_path / "presentation_sheet.svg"
+    svg = export_sheet_svg(sample, out).decode("utf-8")
+    for layer_id in ("sheet-border", "title-block", "plan-viewport", "schedule", "legend", "notes", "footer"):
+        assert f'id="{layer_id}"' in svg, f"Missing SVG layer: {layer_id}"
+
+
+def test_sheet_svg_contains_project_title(tmp_path, sample):
+    from app.core.exports import export_sheet_svg
+    out = tmp_path / "presentation_sheet.svg"
+    svg = export_sheet_svg(sample, out, title="Arch Test House").decode("utf-8")
+    assert "Arch Test House" in svg
+
+
+def test_sheet_svg_has_room_schedule(tmp_path, sample):
+    from app.core.exports import export_sheet_svg
+    out = tmp_path / "presentation_sheet.svg"
+    svg = export_sheet_svg(sample, out).decode("utf-8")
+    for room in sample.rooms[:3]:
+        assert room.name in svg
+
+
+def test_sheet_svg_a3_viewbox(tmp_path, sample):
+    from app.core.exports import export_sheet_svg
+    out = tmp_path / "presentation_sheet.svg"
+    svg = export_sheet_svg(sample, out, page_size="A3").decode("utf-8")
+    assert "420" in svg and "297" in svg and "viewBox" in svg
+
+
+def test_api_export_sheet_svg(client, project_with_design):
+    r = client.post(f"/projects/{project_with_design}/exports/sheet_svg")
+    assert r.status_code == 201
+    body = r.json()
+    assert body["format"] == "sheet_svg"
+    assert body["filename"] == "presentation_sheet.svg"
+
+
+def test_api_download_sheet_svg(client, project_with_design):
+    client.post(f"/projects/{project_with_design}/exports/sheet_svg")
+    r = client.get(f"/projects/{project_with_design}/exports/presentation_sheet.svg")
+    assert r.status_code == 200
+    assert b"<svg" in r.content
+
+
+# ── 12.2 Sheet PDF exporter ──────────────────────────────────────────────────
+
+
+def test_sheet_pdf_writes_file(tmp_path, sample):
+    from app.core.exports import export_sheet_pdf
+    out = tmp_path / "presentation_sheet.pdf"
+    export_sheet_pdf(sample, out)
+    assert out.exists()
+    assert out.stat().st_size > 1000
+
+
+def test_sheet_pdf_returns_bytes(tmp_path, sample):
+    from app.core.exports import export_sheet_pdf
+    out = tmp_path / "presentation_sheet.pdf"
+    result = export_sheet_pdf(sample, out)
+    assert isinstance(result, bytes)
+
+
+def test_sheet_pdf_has_pdf_header(tmp_path, sample):
+    from app.core.exports import export_sheet_pdf
+    out = tmp_path / "presentation_sheet.pdf"
+    data = export_sheet_pdf(sample, out)
+    assert data[:4] == b"%PDF", "File does not start with PDF magic bytes"
+
+
+def test_sheet_pdf_has_content(tmp_path, sample):
+    from app.core.exports import export_sheet_pdf
+    out = tmp_path / "presentation_sheet.pdf"
+    data = export_sheet_pdf(sample, out)
+    assert len(data) > 3000
+
+
+def test_sheet_pdf_with_custom_title(tmp_path, sample):
+    from app.core.exports import export_sheet_pdf
+    out = tmp_path / "presentation_sheet.pdf"
+    data = export_sheet_pdf(sample, out, title="Custom Title", subtitle="Phase 12")
+    assert data[:4] == b"%PDF"
+    assert len(data) > 1000
+
+
+def test_api_export_sheet_pdf(client, project_with_design):
+    r = client.post(f"/projects/{project_with_design}/exports/sheet_pdf")
+    assert r.status_code == 201
+    body = r.json()
+    assert body["format"] == "sheet_pdf"
+    assert body["filename"] == "presentation_sheet.pdf"
+
+
+def test_api_download_sheet_pdf(client, project_with_design):
+    client.post(f"/projects/{project_with_design}/exports/sheet_pdf")
+    r = client.get(f"/projects/{project_with_design}/exports/presentation_sheet.pdf")
+    assert r.status_code == 200
+    assert r.content[:4] == b"%PDF"
+    assert r.headers["content-type"] == "application/pdf"
