@@ -5,6 +5,7 @@ GET /projects/{id}/intelligence?vastu=false  → IntelligenceReport
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from app.core.auth.context import get_current_user_id
 from app.core.intelligence import (
     IntelligenceReport,
     compute_areas,
@@ -21,9 +22,10 @@ def get_intelligence(
     project_id: str,
     vastu: bool = Query(False, description="Include Vastu Shastra suggestions"),
     store: ProjectStore = Depends(get_project_store),
+    user_id: str = Depends(get_current_user_id),
 ) -> IntelligenceReport:
     try:
-        stored = store.get_project(project_id)
+        stored = store.get_project(project_id, user_id=user_id)
     except ProjectNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 

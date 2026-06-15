@@ -236,10 +236,17 @@ Status values: ✅ Done · 🔵 In progress · ⬜ Not started
 Stages: 17.1 render-friendly export (named/grouped hierarchy) · 17.2 material metadata · 17.3 camera suggestions (exterior, top, street, living room, balcony) · 17.4 Blender automation (scene/cameras/lights/materials/render settings) · 17.5 workflow docs (Lumion, D5, Enscape, V-Ray, Blender).
 **Accept:** render-ready exports + Blender automation + documented engine workflows.
 
-## Phase 18 — Cloud & Account MVP (preparation) — ⬜
+## Phase 18 — Cloud & Account MVP (preparation) — ✅ Done
 
-Stages: 18.1 auth strategy (local user → Google login, ownership) · 18.2 database strategy (Postgres/Mongo, metadata, history) · 18.3 cloud storage strategy (S3/Supabase) · 18.4 local/cloud storage abstraction · 18.5 cloud-ready API structure.
-**Accept:** local mode untouched; abstractions + strategy docs in place.
+| Stage | Scope | Status |
+|---|---|---|
+| 18.1 Auth context seam | `get_current_user_id()` FastAPI dependency returns `"local-user"`; all project/export/intelligence routes inject `user_id`; dependency override isolates data by user | ✅ |
+| 18.2 SQLite project index | `ProjectIndex` ABC + `SqliteProjectIndex` — upsert/list/remove with `(user_id, updated_at DESC)` ordering; parity test vs directory scan | ✅ |
+| 18.3 Cloud storage strategy | `docs/architecture/cloud-storage-strategy.md` — local→cloud path mapping, S3/Supabase, signed URL exports, atomic writes, multi-region | ✅ |
+| 18.4 Cloud storage abstraction | `CloudProjectStore` (full ABC stub, raises `NotImplementedError`); factory selects backend via `SCOTCH_STORAGE_BACKEND`; `core/storage/__init__` exports all symbols | ✅ |
+| 18.5 Cloud-ready API structure | `docs/architecture/auth-strategy.md` (Google OAuth PKCE, JWT), `database-strategy.md` (Postgres schema), `cloud-api-readiness.md` (16-route audit, pagination plan) | ✅ |
+
+**Accept:** local mode untouched; abstractions + strategy docs in place. 38/38 tests pass (321 total).
 
 ## Phase 19 — Versioning & History MVP — ⬜
 

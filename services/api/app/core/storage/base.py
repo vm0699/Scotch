@@ -12,7 +12,14 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from app.core.models import ArchitectureProject, DesignOption, ExportManifest
+from app.core.models import (
+    ArchitectureProject,
+    DesignOption,
+    ExportManifest,
+    ProjectVersion,
+    ProjectVersionMeta,
+    VersionChangeType,
+)
 
 LOCAL_USER_ID = "local-user"
 
@@ -21,6 +28,12 @@ class ProjectNotFoundError(LookupError):
     def __init__(self, project_id: str):
         super().__init__(f"Project '{project_id}' not found")
         self.project_id = project_id
+
+
+class VersionNotFoundError(LookupError):
+    def __init__(self, version_id: str):
+        super().__init__(f"Version '{version_id}' not found")
+        self.version_id = version_id
 
 
 class StoredProject(BaseModel):
@@ -91,6 +104,8 @@ class ProjectStore(ABC):
         prompt: str | None = None,
         project: ArchitectureProject | None = None,
         options: list[DesignOption] | None = None,
+        change_type: VersionChangeType | None = None,
+        version_summary: str | None = None,
         user_id: str = LOCAL_USER_ID,
     ) -> StoredProject: ...
 
@@ -114,3 +129,20 @@ class ProjectStore(ABC):
     def get_export_path(
         self, project_id: str, filename: str, user_id: str = LOCAL_USER_ID
     ) -> Path: ...
+
+    # ── Version history (Phase 19) ────────────────────────────────────────────
+
+    @abstractmethod
+    def append_version(
+        self, project_id: str, version: ProjectVersion, user_id: str = LOCAL_USER_ID
+    ) -> None: ...
+
+    @abstractmethod
+    def list_versions(
+        self, project_id: str, user_id: str = LOCAL_USER_ID
+    ) -> list[ProjectVersionMeta]: ...
+
+    @abstractmethod
+    def get_version(
+        self, project_id: str, version_id: str, user_id: str = LOCAL_USER_ID
+    ) -> ProjectVersion: ...

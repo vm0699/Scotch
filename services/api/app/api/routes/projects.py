@@ -1,7 +1,10 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from app.core.architecture.sample_factory import create_sample_project
+from app.core.auth.context import get_current_user_id
 from app.core.models import ArchitectureProject, DesignOption
 from app.core.storage import (
     ProjectNotFoundError,
@@ -25,6 +28,8 @@ class UpdateProjectRequest(BaseModel):
     prompt: str | None = None
     project: ArchitectureProject | None = None
     options: list[DesignOption] | None = None
+    change_type: Literal["generate", "regenerate", "edit", "option"] | None = None
+    version_summary: str | None = None
 
 
 def _validated(project: ArchitectureProject | None) -> ArchitectureProject | None:
@@ -61,24 +66,27 @@ def get_sample_project() -> ArchitectureProject:
 def create_project(
     body: CreateProjectRequest,
     store: ProjectStore = Depends(get_project_store),
+    user_id: str = Depends(get_current_user_id),
 ) -> StoredProject:
-    return store.create_project(name=body.name, prompt=body.prompt)
+    return store.create_project(name=body.name, prompt=body.prompt, user_id=user_id)
 
 
 @router.get("", response_model=list[ProjectSummary])
 def list_projects(
     store: ProjectStore = Depends(get_project_store),
+    user_id: str = Depends(get_current_user_id),
 ) -> list[ProjectSummary]:
-    return store.list_projects()
+    return store.list_projects(user_id=user_id)
 
 
 @router.get("/{project_id}", response_model=StoredProject)
 def get_project(
     project_id: str,
     store: ProjectStore = Depends(get_project_store),
+    user_id: str = Depends(get_current_user_id),
 ) -> StoredProject:
     try:
-        return store.get_project(project_id)
+        return store.get_project(project_id, user_id=user_id)
     except ProjectNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -88,6 +96,7 @@ def update_project(
     project_id: str,
     body: UpdateProjectRequest,
     store: ProjectStore = Depends(get_project_store),
+    user_id: str = Depends(get_current_user_id),
 ) -> StoredProject:
     try:
         return store.update_project(
@@ -96,6 +105,9 @@ def update_project(
             prompt=body.prompt,
             project=_validated(body.project),
             options=body.options,
+            change_type=body.change_type,
+            version_summary=body.version_summary,
+            user_id=user_id,
         )
     except ProjectNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -105,8 +117,9 @@ def update_project(
 def delete_project(
     project_id: str,
     store: ProjectStore = Depends(get_project_store),
+    user_id: str = Depends(get_current_user_id),
 ) -> None:
     try:
-        store.delete_project(project_id)
+        store.delete_project(project_id, user_id=user_id)
     except ProjectNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc

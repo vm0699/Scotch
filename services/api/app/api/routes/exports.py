@@ -16,6 +16,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 
+from app.core.auth.context import get_current_user_id
 from app.core.exports import (
     export_blender,
     export_dxf,
@@ -94,9 +95,10 @@ def trigger_export(
     project_id: str,
     fmt: ExportFormat,
     store: ProjectStore = Depends(get_project_store),
+    user_id: str = Depends(get_current_user_id),
 ) -> ExportManifest:
     try:
-        stored = store.get_project(project_id)
+        stored = store.get_project(project_id, user_id=user_id)
     except ProjectNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -115,7 +117,7 @@ def trigger_export(
         )
 
     filename = _export_filename(project_id, fmt)
-    output_path: Path = store.get_export_path(project_id, filename)
+    output_path: Path = store.get_export_path(project_id, filename, user_id=user_id)
 
     if fmt == "json":
         export_json(project, output_path)
@@ -146,7 +148,7 @@ def trigger_export(
         path=str(output_path),
         created_at=datetime.now(timezone.utc),
     )
-    store.save_export_manifest(project_id, manifest)
+    store.save_export_manifest(project_id, manifest, user_id=user_id)
     return manifest
 
 
@@ -154,9 +156,10 @@ def trigger_export(
 def list_exports(
     project_id: str,
     store: ProjectStore = Depends(get_project_store),
+    user_id: str = Depends(get_current_user_id),
 ) -> list[ExportManifest]:
     try:
-        return store.list_export_manifests(project_id)
+        return store.list_export_manifests(project_id, user_id=user_id)
     except ProjectNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -166,9 +169,10 @@ def download_export(
     project_id: str,
     filename: str,
     store: ProjectStore = Depends(get_project_store),
+    user_id: str = Depends(get_current_user_id),
 ) -> FileResponse:
     try:
-        path = store.get_export_path(project_id, filename)
+        path = store.get_export_path(project_id, filename, user_id=user_id)
     except ProjectNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 

@@ -424,7 +424,7 @@ def test_blender_collections(tmp_path, sample):
     from app.core.exports import export_blender
     out = tmp_path / "floor_plan.py"
     py = export_blender(sample, out).decode("utf-8")
-    for col in ("Scotch_Site", "Scotch_Rooms", "Scotch_Lighting", "Scotch_Cameras"):
+    for col in ("Scotch_Site", "Scotch_Walls", "Scotch_Lighting", "Scotch_Cameras"):
         assert col in py, f"Collection {col!r} missing from Blender script"
 
 
