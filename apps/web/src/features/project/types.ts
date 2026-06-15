@@ -77,6 +77,25 @@ export interface Material {
   /** What the material applies to, e.g. wall, floor, roof, glass. */
   target: string;
   finish?: string | null;
+  /** Hex color hint for render engines, e.g. "#F5F4F2". */
+  base_color: string;
+  /** Principled BSDF roughness hint (0–1). */
+  roughness: number;
+  /** Principled BSDF metallic hint (0–1). */
+  metallic: number;
+}
+
+/** A camera preset derived from site/room geometry for render workflows. */
+export interface CameraSuggestion {
+  name: string;
+  type: "perspective" | "orthographic";
+  /** [plan_x, height, plan_y] in project units — maps to three.js [x, y, z] */
+  position: [number, number, number];
+  /** [plan_x, height, plan_y] in project units */
+  target: [number, number, number];
+  /** Horizontal FOV in degrees; 0 for orthographic. */
+  fov: number;
+  description: string;
 }
 
 export interface Parameter {
@@ -129,6 +148,33 @@ export interface DesignOption {
   summary: string;
   warnings: ProjectWarning[];
   preview: ArchitectureProject;
+}
+
+// ── Version history (Phase 19) ────────────────────────────────────────────────
+
+export type VersionChangeType =
+  | "generate"
+  | "regenerate"
+  | "edit"
+  | "option"
+  | "restore";
+
+export interface ProjectVersionMeta {
+  version_id: string;
+  created_at: string;
+  change_type: VersionChangeType;
+  summary: string;
+  room_count: number;
+  total_area: number;
+  thumbnail: string | null;
+}
+
+export interface ProjectVersion {
+  version_id: string;
+  created_at: string;
+  change_type: VersionChangeType;
+  summary: string;
+  snapshot: ArchitectureProject;
 }
 
 export function roomArea(room: Room): number {

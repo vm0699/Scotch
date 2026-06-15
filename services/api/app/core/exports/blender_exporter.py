@@ -1,17 +1,18 @@
-"""Stage 11.4 — Blender Python script exporter.
+"""Stage 11.4 / 17.1 / 17.4 — Blender Python script exporter (render-ready).
 
 Generates a runnable Blender Python (.py) file from an ArchitectureProject.
 
-Approach:
-  - Uses the `bpy` API (Blender 3.6+, LTS).
-  - Collections: "Scotch_Site", "Scotch_Rooms", "Scotch_Openings",
-    "Scotch_Lighting", "Scotch_Cameras".
-  - Rooms: box meshes (walls as extruded flat faces) with Principled BSDF
-    materials colour-coded by room type.
-  - Doors: full-height opening boxes (to be used as Boolean cutters).
-  - Cameras: top orthographic + exterior perspective.
-  - Lighting: HDRI sky + area fill + sun key.
-  - Render: EEVEE preset, 1920×1080.
+Phase 17 improvements:
+  - Object/collection naming follows the Scotch render-ready hierarchy:
+      Collections: Scotch_Site, Scotch_Walls, Scotch_Floors, Scotch_Roof,
+                   Scotch_Glass, Scotch_Lighting, Scotch_Cameras
+      Objects:     Scotch_Wall_{room}, Scotch_Floor_{room}, Scotch_Roof,
+                   Scotch_Ground, Scotch_Glass_{room}_{Door|Win}_{wall}
+    Render engines can map materials by object-name prefix.
+  - 5 camera presets derived from site + room geometry (stage 17.3 cameras).
+  - Headless --background render note with output path example.
+  - Cycles render preset included as an alternative to EEVEE.
+  - Material records from project.materials flow into Blender material creation.
 
 Coordinate mapping:
   Plan x  → Blender X (right)
@@ -23,6 +24,7 @@ Coordinate mapping:
 from datetime import datetime, timezone
 from pathlib import Path
 
+from app.core.architecture.cameras import derive_cameras
 from app.core.models import ArchitectureProject, Room
 
 FT_TO_M = 0.3048
@@ -49,7 +51,7 @@ _ROOM_COLOURS: dict[str, tuple[float, float, float]] = {
 }
 _DEFAULT_COLOUR = (0.94, 0.93, 0.92)
 
-_WALL_COLOUR  = (0.96, 0.95, 0.93)
+_WALL_COLOUR   = (0.96, 0.95, 0.93)
 _GROUND_COLOUR = (0.82, 0.82, 0.79)
 _ROOF_COLOUR   = (0.69, 0.66, 0.62)
 _GLASS_COLOUR  = (0.70, 0.84, 0.96)
@@ -62,6 +64,10 @@ def _room_colour(room: Room) -> tuple[float, float, float]:
 
 def _mat_name(room_type: str) -> str:
     return f"Scotch_{room_type.replace(' ', '_').title()}"
+
+
+def _safe(name: str) -> str:
+    return name.replace(" ", "_").replace("'", "").replace("-", "_")
 
 
 def export_blender(project: ArchitectureProject, output_path: Path) -> bytes:
@@ -81,20 +87,25 @@ def export_blender(project: ArchitectureProject, output_path: Path) -> bytes:
 
     # ── Header ────────────────────────────────────────────────────────────────
     L('"""')
-    L(f"Scotch — Blender Python Import Script")
+    L("Scotch — Blender Python Import Script  (render-ready, Phase 17)")
     L(f"Project : {project.name or 'Untitled'}")
     L(f"Generated: {stamp}")
-    L(f"Blender : 3.6+ (LTS) — tested with bpy 3.6 / 4.x")
-    L(f"Units   : metres (feet × {FT_TO_M})")
+    L(f"Blender  : 3.6+ (LTS) / 4.x — tested with bpy 3.6 / 4.x")
+    L(f"Units    : metres (feet × {FT_TO_M})")
     L("")
-    L("How to run:")
+    L("How to run (interactive):")
     L("  Open Blender → Scripting workspace → Open this file → Run Script.")
     L("  The scene is cleared and rebuilt from scratch each run.")
+    L("")
+    L("How to render headless (Blender --background):")
+    L("  blender --background --python floor_plan_blender.py -- --render-anim")
+    L("  Output is written to /tmp/scotch_render/ by default (see render settings).")
     L('"""')
     L("")
     L("import bpy")
     L("import bmesh")
-    L("from mathutils import Vector, Matrix")
+    L("from mathutils import Vector, Matrix, Euler")
+    L("import math")
     L("")
 
     # ── Constants ────────────────────────────────────────────────────────────
@@ -109,7 +120,7 @@ def export_blender(project: ArchitectureProject, output_path: Path) -> bytes:
     L("")
 
     # ── Clear scene ───────────────────────────────────────────────────────────
-    L("# ── Clear existing Scotch objects ────────────────────────────────────────")
+    L("# ── Clear existing objects ───────────────────────────────────────────────")
     L("bpy.ops.object.select_all(action='SELECT')")
     L("bpy.ops.object.delete()")
     L("for c in list(bpy.data.collections):")
@@ -119,10 +130,11 @@ def export_blender(project: ArchitectureProject, output_path: Path) -> bytes:
     # ── Helper functions ─────────────────────────────────────────────────────
     L("# ── Helpers ──────────────────────────────────────────────────────────────")
     L("")
-    L("def ensure_collection(name):")
+    L("def ensure_collection(name, parent=None):")
     L("    c = bpy.data.collections.get(name) or bpy.data.collections.new(name)")
-    L("    if name not in bpy.context.scene.collection.children:")
-    L("        bpy.context.scene.collection.children.link(c)")
+    L("    root = parent or bpy.context.scene.collection")
+    L("    if name not in [ch.name for ch in root.children]:")
+    L("        root.children.link(c)")
     L("    return c")
     L("")
     L("def scotch_mat(name, r, g, b, alpha=1.0, metallic=0.0, roughness=0.5):")
@@ -140,7 +152,6 @@ def export_blender(project: ArchitectureProject, output_path: Path) -> bytes:
     L("    return mat")
     L("")
     L("def box_mesh(name, x, y, z, w, d, h, mat, collection):")
-    L("    '\"\"Create a box mesh and link to collection.\"\"'")
     L("    me = bpy.data.meshes.new(name + '_mesh')")
     L("    bm = bmesh.new()")
     L("    verts = [(x, y, z), (x+w, y, z), (x+w, y+d, z), (x, y+d, z),")
@@ -157,28 +168,50 @@ def export_blender(project: ArchitectureProject, output_path: Path) -> bytes:
     L("    return obj")
     L("")
 
-    # ── Collections ───────────────────────────────────────────────────────────
-    L("# ── Collections ──────────────────────────────────────────────────────────")
-    L("col_site    = ensure_collection('Scotch_Site')")
-    L("col_rooms   = ensure_collection('Scotch_Rooms')")
-    L("col_open    = ensure_collection('Scotch_Openings')")
-    L("col_lights  = ensure_collection('Scotch_Lighting')")
-    L("col_cams    = ensure_collection('Scotch_Cameras')")
+    # ── Collections (render-ready hierarchy) ─────────────────────────────────
+    L("# ── Collections — render-ready Scotch hierarchy ──────────────────────────")
+    L("# Render engines can map materials by collection or object-name prefix.")
+    L("col_site   = ensure_collection('Scotch_Site')")
+    L("col_walls  = ensure_collection('Scotch_Walls')")
+    L("col_floors = ensure_collection('Scotch_Floors')")
+    L("col_roof   = ensure_collection('Scotch_Roof')")
+    L("col_glass  = ensure_collection('Scotch_Glass')")
+    L("col_lights = ensure_collection('Scotch_Lighting')")
+    L("col_cams   = ensure_collection('Scotch_Cameras')")
     L("")
 
     # ── Materials ─────────────────────────────────────────────────────────────
     L("# ── Materials ────────────────────────────────────────────────────────────")
+
+    # Use material hints from project.materials if available; fall back to defaults
+    mat_hints: dict[str, tuple] = {}
+    for m in (project.materials or []):
+        # Convert hex to float RGB
+        hx = m.base_color.lstrip("#")
+        if len(hx) == 6:
+            r = int(hx[0:2], 16) / 255
+            g = int(hx[2:4], 16) / 255
+            b = int(hx[4:6], 16) / 255
+            mat_hints[m.target] = (r, g, b, m.roughness, m.metallic)
+
+    def _rgb(target: str, default_rgb: tuple, default_r: float = 0.5) -> str:
+        if target in mat_hints:
+            r, g, b, ro, me = mat_hints[target]
+            return f"{r:.3f}, {g:.3f}, {b:.3f}, roughness={ro}, metallic={me}"
+        r, g, b = default_rgb
+        return f"{r}, {g}, {b}, roughness={default_r}"
+
     wr, wg, wb = _WALL_COLOUR
     gr, gg, gb = _GROUND_COLOUR
     rr, rg_, rb = _ROOF_COLOUR
     glr, glg, glb = _GLASS_COLOUR
-    L(f"mat_wall   = scotch_mat('Scotch_Wall',   {wr}, {wg}, {wb}, roughness=0.7)")
-    L(f"mat_ground = scotch_mat('Scotch_Ground', {gr}, {gg}, {gb}, roughness=0.9)")
-    L(f"mat_roof   = scotch_mat('Scotch_Roof',   {rr}, {rg_}, {rb}, roughness=0.8)")
-    L(f"mat_glass  = scotch_mat('Scotch_Glass',  {glr}, {glg}, {glb}, alpha=0.35, roughness=0.05)")
+
+    L(f"mat_wall   = scotch_mat('Scotch_Wall',   {_rgb('wall',   _WALL_COLOUR,   0.70)})")
+    L(f"mat_ground = scotch_mat('Scotch_Ground', {_rgb('ground', _GROUND_COLOUR, 0.90)})")
+    L(f"mat_roof   = scotch_mat('Scotch_Roof',   {_rgb('roof',   _ROOF_COLOUR,   0.85)})")
+    L(f"mat_glass  = scotch_mat('Scotch_Glass',  {glr}, {glg}, {glb}, alpha=0.35, roughness=0.05, metallic=0.15)")
     L("")
 
-    # Unique room materials
     seen: set[str] = set()
     L("ROOM_MAT = {}")
     for room in project.rooms:
@@ -186,27 +219,31 @@ def export_blender(project: ArchitectureProject, output_path: Path) -> bytes:
         if t in seen:
             continue
         seen.add(t)
-        r, g, b = _room_colour(room)
-        name = _mat_name(t)
-        L(f"ROOM_MAT['{t}'] = scotch_mat('{name}', {r}, {g}, {b})")
+        target_key = f"room:{t}"
+        if target_key in mat_hints:
+            r, g, b, ro, me = mat_hints[target_key]
+            name = _mat_name(t)
+            L(f"ROOM_MAT['{t}'] = scotch_mat('{name}', {r:.3f}, {g:.3f}, {b:.3f}, roughness={ro})")
+        else:
+            r, g, b = _room_colour(room)
+            name = _mat_name(t)
+            L(f"ROOM_MAT['{t}'] = scotch_mat('{name}', {r}, {g}, {b})")
     L("")
 
     # ── Ground slab ───────────────────────────────────────────────────────────
-    L("# ── Ground Slab ──────────────────────────────────────────────────────────")
-    L(f"box_mesh('Ground_Slab', 0, 0, -SLAB_T, SITE_W, SITE_D, SLAB_T, mat_ground, col_site)")
+    L("# ── Scotch_Ground ────────────────────────────────────────────────────────")
+    L(f"box_mesh('Scotch_Ground', 0, 0, -SLAB_T, SITE_W, SITE_D, SLAB_T, mat_ground, col_site)")
     L("")
 
     # ── Rooms ─────────────────────────────────────────────────────────────────
-    L("# ── Rooms ────────────────────────────────────────────────────────────────")
-    L("# Walls are built as a solid box (outer dims) + inner hollow box.")
-    L("# The inner box uses a Boolean Difference modifier to cut the wall solid,")
-    L("# leaving hollow rooms. Apply modifiers in Blender before rendering.")
+    L("# ── Scotch_Walls / Scotch_Floors / Scotch_Glass ─────────────────────────")
+    L("# Object names: Scotch_Wall_<room>, Scotch_Floor_<room>, Scotch_Glass_<room>_*")
+    L("# Render engines assign materials by object-name prefix automatically.")
     L("")
 
     for room in project.rooms:
-        t  = room.type.lower().replace(" ", "_")
+        t   = room.type.lower().replace(" ", "_")
         mat_expr = f"ROOM_MAT.get('{t}', mat_wall)"
-        # Convert to metres
         ox  = ft(room.x - WALL_T / 2)
         oy  = ft(room.y - WALL_T / 2)
         ow  = ft(room.width  + WALL_T)
@@ -215,15 +252,16 @@ def export_blender(project: ArchitectureProject, output_path: Path) -> bytes:
         ry  = ft(room.y)
         rw  = ft(room.width)
         rd  = ft(room.depth)
-        safe = room.name.replace(" ", "_").replace("'", "")
+        safe_name = _safe(room.name)
+
         L(f"# {room.name}")
-        L(f"wall_outer = box_mesh('{safe}_walls', {ox}, {oy}, 0, {ow}, {od}, WALL_H, mat_wall, col_rooms)")
-        L(f"room_inner = box_mesh('{safe}_interior', {rx}, {ry}, 0, {rw}, {rd}, WALL_H, {mat_expr}, col_rooms)")
-        L(f"# Boolean Difference: wall_outer − room_inner → hollow room walls")
+        L(f"wall_outer = box_mesh('Scotch_Wall_{safe_name}',  {ox}, {oy}, 0, {ow}, {od}, WALL_H, mat_wall,    col_walls)")
+        L(f"room_inner = box_mesh('Scotch_Floor_{safe_name}', {rx}, {ry}, 0, {rw}, {rd}, WALL_H, {mat_expr}, col_floors)")
+        L(f"# Boolean Difference: Scotch_Wall − Scotch_Floor → hollow room walls")
         L(f"mod = wall_outer.modifiers.new('Hollow', 'BOOLEAN')")
         L(f"mod.operation = 'DIFFERENCE'")
         L(f"mod.object = room_inner")
-        L(f"room_inner.hide_render = True")
+        L(f"room_inner.hide_render   = True")
         L(f"room_inner.hide_viewport = True")
         L("")
 
@@ -233,7 +271,6 @@ def export_blender(project: ArchitectureProject, output_path: Path) -> bytes:
             wall = door.wall
             off  = door.offset
             wid  = door.width
-            # Opening box: full height, WALL_T deep (slightly oversized for clean Boolean)
             if wall == "north":
                 dx0, dy0 = room.x + off, room.y - WALL_T
                 dw, dd_ = wid, WALL_T * 2
@@ -249,11 +286,11 @@ def export_blender(project: ArchitectureProject, output_path: Path) -> bytes:
             odx, ody = ft(dx0), ft(dy0)
             odw, odd = ft(dw), ft(dd_)
             L(f"# Door opening: wall={wall}, offset={off}ft, width={wid}ft")
-            L(f"door_cut = box_mesh('{safe}_door_{wall}', {odx}, {ody}, 0, {odw}, {odd}, WALL_H, mat_glass, col_open)")
+            L(f"door_cut = box_mesh('Scotch_Glass_{safe_name}_Door_{wall.title()}', {odx}, {ody}, 0, {odw}, {odd}, WALL_H, mat_glass, col_glass)")
             L(f"mod_d = wall_outer.modifiers.new('Door_{wall}', 'BOOLEAN')")
             L(f"mod_d.operation = 'DIFFERENCE'")
             L(f"mod_d.object = door_cut")
-            L(f"door_cut.hide_render = True")
+            L(f"door_cut.hide_render   = True")
             L(f"door_cut.hide_viewport = True")
             L("")
 
@@ -278,82 +315,126 @@ def export_blender(project: ArchitectureProject, output_path: Path) -> bytes:
             owx, owy = ft(wx0), ft(wy0)
             oww, owd = ft(ww_), ft(wd_)
             L(f"# Window opening: wall={wall}, offset={off}ft, width={wid}ft (sill {SILL_H}m)")
-            L(f"win_cut = box_mesh('{safe}_win_{wall}', {owx}, {owy}, SILL_H, {oww}, {owd}, WIN_H, mat_glass, col_open)")
+            L(f"win_cut = box_mesh('Scotch_Glass_{safe_name}_Win_{wall.title()}', {owx}, {owy}, SILL_H, {oww}, {owd}, WIN_H, mat_glass, col_glass)")
             L(f"mod_w = wall_outer.modifiers.new('Win_{wall}', 'BOOLEAN')")
             L(f"mod_w.operation = 'DIFFERENCE'")
             L(f"mod_w.object = win_cut")
-            L(f"win_cut.hide_render = True")
+            L(f"win_cut.hide_render   = True")
             L(f"win_cut.hide_viewport = True")
             L("")
 
     # ── Roof slab ─────────────────────────────────────────────────────────────
-    L("# ── Roof Slab ────────────────────────────────────────────────────────────")
-    L(f"box_mesh('Roof_Slab', 0, 0, WALL_H, SITE_W, SITE_D, SLAB_T, mat_roof, col_site)")
-    L("")
-
-    # ── Cameras ───────────────────────────────────────────────────────────────
-    cx_m = round(sw_m / 2, 3)
-    cy_m = round(sd_m / 2, 3)
-    L("# ── Cameras ──────────────────────────────────────────────────────────────")
-    L("# Top orthographic camera")
-    L("cam_top_data = bpy.data.cameras.new('Cam_Top')")
-    L("cam_top_data.type = 'ORTHO'")
-    L(f"cam_top_data.ortho_scale = max(SITE_W, SITE_D) * 1.3")
-    L("cam_top = bpy.data.objects.new('Cam_Top', cam_top_data)")
-    L("col_cams.objects.link(cam_top)")
-    L(f"cam_top.location = ({cx_m}, {cy_m}, {round(fh_m * 3, 2)})")
-    L("cam_top.rotation_euler = (0, 0, 0)")
-    L("")
-    L("# Exterior perspective camera (south-east view)")
-    L("cam_ext_data = bpy.data.cameras.new('Cam_Exterior')")
-    L("cam_ext_data.type = 'PERSP'")
-    L("cam_ext_data.lens = 35")
-    L("cam_ext = bpy.data.objects.new('Cam_Exterior', cam_ext_data)")
-    L("col_cams.objects.link(cam_ext)")
-    L(f"cam_ext.location = ({round(-sw_m * 0.6, 2)}, {round(-sd_m * 0.6, 2)}, {round(fh_m * 1.6, 2)})")
-    L(f"cam_ext.rotation_euler = (1.0, 0, -0.785)")
-    L("")
-    L("# Set top camera as active")
-    L("bpy.context.scene.camera = cam_top")
+    L("# ── Scotch_Roof ──────────────────────────────────────────────────────────")
+    L(f"box_mesh('Scotch_Roof', 0, 0, WALL_H, SITE_W, SITE_D, SLAB_T, mat_roof, col_roof)")
     L("")
 
     # ── Lighting ──────────────────────────────────────────────────────────────
-    L("# ── Lighting ─────────────────────────────────────────────────────────────")
-    L("# Sun (key)")
-    L("sun_data = bpy.data.lights.new('Sun_Key', 'SUN')")
+    L("# ── Scotch_Lighting ─────────────────────────────────────────────────────")
+    L("# Sun key light")
+    L("sun_data = bpy.data.lights.new('Scotch_Sun_Key', 'SUN')")
     L("sun_data.energy = 3.0")
     L("sun_data.color  = (1.0, 0.97, 0.90)")
-    L("sun      = bpy.data.objects.new('Sun_Key', sun_data)")
+    L("sun_data.angle  = math.radians(3.5)   # slight softness")
+    L("sun = bpy.data.objects.new('Scotch_Sun_Key', sun_data)")
     L("col_lights.objects.link(sun)")
     L(f"sun.location       = ({round(sw_m * 1.5, 2)}, {round(-sd_m * 0.5, 2)}, {round(fh_m * 2, 2)})")
-    L("sun.rotation_euler = (0.9, 0.0, 0.8)")
+    L("sun.rotation_euler = Euler((0.9, 0.0, 0.8), 'XYZ')")
     L("")
-    L("# Area fill (soft indoor feel)")
-    L("fill_data = bpy.data.lights.new('Area_Fill', 'AREA')")
-    L("fill_data.energy = 200")
-    L("fill_data.size   = max(SITE_W, SITE_D)")
-    L("fill      = bpy.data.objects.new('Area_Fill', fill_data)")
+    L("# Area fill (soft ambient-interior feel)")
+    L("fill_data = bpy.data.lights.new('Scotch_Area_Fill', 'AREA')")
+    L("fill_data.energy = 200.0")
+    L(f"fill_data.size   = max(SITE_W, SITE_D)")
+    L("fill = bpy.data.objects.new('Scotch_Area_Fill', fill_data)")
     L("col_lights.objects.link(fill)")
+    cx_m = round(sw_m / 2, 3)
+    cy_m = round(sd_m / 2, 3)
     L(f"fill.location = ({cx_m}, {cy_m}, {round(fh_m * 2.5, 2)})")
     L("")
+    L("# Rim light (back-light from opposite side to sun)")
+    L("rim_data = bpy.data.lights.new('Scotch_Sun_Rim', 'SUN')")
+    L("rim_data.energy = 0.6")
+    L("rim_data.color  = (0.88, 0.95, 1.0)   # cool blue rim")
+    L("rim = bpy.data.objects.new('Scotch_Sun_Rim', rim_data)")
+    L("col_lights.objects.link(rim)")
+    L(f"rim.location       = ({round(-sw_m * 0.8, 2)}, {round(sd_m * 1.2, 2)}, {round(fh_m * 1.5, 2)})")
+    L("rim.rotation_euler = Euler((-0.6, 0.0, 2.5), 'XYZ')")
+    L("")
+
+    # ── Cameras (derived from project geometry) ───────────────────────────────
+    L("# ── Scotch_Cameras — 5 render presets ───────────────────────────────────")
+
+    cameras = derive_cameras(project)
+    for i, cam in enumerate(cameras):
+        # position[0]=plan_x → Blender X
+        # position[2]=plan_y → Blender Y
+        # position[1]=height → Blender Z
+        px = round(cam.position[0] * FT_TO_M, 3)
+        py = round(cam.position[2] * FT_TO_M, 3)
+        pz = round(cam.position[1] * FT_TO_M, 3)
+        tx = round(cam.target[0] * FT_TO_M, 3)
+        ty = round(cam.target[2] * FT_TO_M, 3)
+        tz = round(cam.target[1] * FT_TO_M, 3)
+        cam_safe = cam.name
+        c_type = "'ORTHO'" if cam.type == "orthographic" else "'PERSP'"
+        L(f"# {cam.description}")
+        L(f"cam_{cam_safe}_data = bpy.data.cameras.new('Scotch_Cam_{cam_safe.title()}')")
+        L(f"cam_{cam_safe}_data.type = {c_type}")
+        if cam.type == "orthographic":
+            L(f"cam_{cam_safe}_data.ortho_scale = max(SITE_W, SITE_D) * 1.3")
+        else:
+            L(f"cam_{cam_safe}_data.lens = {round(50 / (2 * __import__('math').tan(__import__('math').radians(cam.fov / 2))), 1) if cam.fov > 0 else 35}  # {cam.fov}° fov approx")
+        L(f"cam_{cam_safe} = bpy.data.objects.new('Scotch_Cam_{cam_safe.title()}', cam_{cam_safe}_data)")
+        L(f"col_cams.objects.link(cam_{cam_safe})")
+        L(f"cam_{cam_safe}.location = ({px}, {py}, {pz})")
+        # Aim using 'Track to' constraint toward target
+        L(f"con = cam_{cam_safe}.constraints.new('TRACK_TO')")
+        L(f"empty_{cam_safe} = bpy.data.objects.new('Target_{cam_safe}', None)")
+        L(f"col_cams.objects.link(empty_{cam_safe})")
+        L(f"empty_{cam_safe}.location = ({tx}, {ty}, {tz})")
+        L(f"con.target = empty_{cam_safe}")
+        L(f"con.track_axis = 'TRACK_NEGATIVE_Z'")
+        L(f"con.up_axis = 'UP_Y'")
+        if i == 0:
+            L(f"bpy.context.scene.camera = cam_{cam_safe}   # default active camera")
+        L("")
 
     # ── Render settings ───────────────────────────────────────────────────────
     L("# ── Render Settings ──────────────────────────────────────────────────────")
     L("scene = bpy.context.scene")
-    L("scene.render.engine = 'BLENDER_EEVEE'")
-    L("scene.render.resolution_x = 1920")
-    L("scene.render.resolution_y = 1080")
+    L("scene.render.engine           = 'BLENDER_EEVEE'  # change to 'CYCLES' for path tracing")
+    L("scene.render.resolution_x     = 1920")
+    L("scene.render.resolution_y     = 1080")
     L("scene.render.film_transparent = False")
+    L("scene.render.filepath         = '/tmp/scotch_render/'")
+    L("scene.render.image_settings.file_format = 'PNG'")
+    L("")
+    L("# Cycles settings (uncomment to use Cycles instead of EEVEE)")
+    L("# scene.render.engine = 'CYCLES'")
+    L("# scene.cycles.samples = 256")
+    L("# scene.cycles.use_denoising = True")
+    L("")
+    L("# World background (sky blue)")
     L("scene.world = bpy.data.worlds.get('World') or bpy.data.worlds.new('World')")
     L("scene.world.use_nodes = True")
     L("bg = scene.world.node_tree.nodes.get('Background')")
-    L("if bg: bg.inputs['Color'].default_value = (0.55, 0.65, 0.78, 1.0)  # sky blue")
-    L("if bg: bg.inputs['Strength'].default_value = 0.5")
+    L("if bg: bg.inputs['Color'].default_value    = (0.55, 0.65, 0.78, 1.0)")
+    L("if bg: bg.inputs['Strength'].default_value = 0.6")
     L("")
-    L("# Apply Boolean modifiers")
-    L("bpy.ops.object.select_all(action='SELECT')")
-    L("print('Scotch import complete. Apply Boolean modifiers to hollow the rooms.')")
-    L("print('Tip: select a room wall object → Properties → Modifier → Apply.')")
+    L("print('Scotch import complete. Object hierarchy:')")
+    L("print('  Scotch_Site    → ground slab')")
+    L("print('  Scotch_Walls   → room wall boxes (Scotch_Wall_<room>)')")
+    L("print('  Scotch_Floors  → room interior volumes (for Boolean; hidden)')")
+    L("print('  Scotch_Roof    → roof slab')")
+    L("print('  Scotch_Glass   → door/window glass openings')")
+    L("print('  Scotch_Lighting → Sun Key + Area Fill + Rim')")
+    L(f"print('  Scotch_Cameras  → {len(cameras)} presets')")
+    L("print()")
+    L("print('Tip: Apply Boolean modifiers to hollow the rooms.')")
+    L("print('     Select Scotch_Wall_<room> → Properties → Modifier → Apply.')")
+    L("print()")
+    L("print('Headless render example:')")
+    L("print('  blender --background --python floor_plan_blender.py')")
+    L("print('  Output: /tmp/scotch_render/0001.png')")
     L("")
 
     content = "\n".join(lines)

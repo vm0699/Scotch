@@ -151,6 +151,7 @@ function EmptyState({
 
 export function PreviewPanel({
   project,
+  projectId,
   title,
   onRename,
   selectedRoomId,
@@ -159,6 +160,7 @@ export function PreviewPanel({
   onApplyRoomEdit,
 }: {
   project: ArchitectureProject | null;
+  projectId?: string;
   title: string;
   onRename: (name: string) => void;
   selectedRoomId: string | null;
@@ -279,7 +281,7 @@ export function PreviewPanel({
           )
         ) : project ? (
           <div className="absolute inset-0">
-            <MassingViewer project={project} />
+            <MassingViewer project={project} projectId={projectId} />
           </div>
         ) : (
           <EmptyState

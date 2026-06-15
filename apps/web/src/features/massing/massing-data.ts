@@ -22,6 +22,8 @@ export type MaterialId = "wall" | "floor" | "roof" | "glass" | "ground";
 
 export interface MassingBox {
   id: string;
+  /** Descriptive name for GLTF node naming — follows Scotch/Category/Room convention. */
+  name: string;
   /** World-space centre in three.js coords: [x, y_up, z]. */
   pos: [number, number, number];
   /** Full extents: [width_x, height_y, depth_z]. */
@@ -67,6 +69,7 @@ export function buildMassingData(project: ArchitectureProject): MassingData {
   // Ground plane (large, slightly below y=0)
   boxes.push({
     id: uid(),
+    name: "Scotch_Ground",
     pos: [sw / 2, -SLAB_T / 2, sd / 2],
     size: [sw + 4, SLAB_T, sd + 4],
     mat: "ground",
@@ -75,6 +78,7 @@ export function buildMassingData(project: ArchitectureProject): MassingData {
   // Floor slab
   boxes.push({
     id: uid(),
+    name: "Scotch_Floor_Slab",
     pos: [sw / 2, SLAB_T / 4, sd / 2],
     size: [sw, SLAB_T / 2, sd],
     mat: "floor",
@@ -83,6 +87,7 @@ export function buildMassingData(project: ArchitectureProject): MassingData {
   // Roof slab (flat, one per building; multi-floor in Phase 10+)
   boxes.push({
     id: uid(),
+    name: "Scotch_Roof",
     pos: [sw / 2, h + SLAB_T / 2, sd / 2],
     size: [sw, SLAB_T, sd],
     mat: "roof",
@@ -95,15 +100,16 @@ export function buildMassingData(project: ArchitectureProject): MassingData {
     const rw = room.width;
     const rd = room.depth;
 
-    // Four perimeter walls
-    const wallDefs: Array<{ id_: string; pos: [number, number, number]; size: [number, number, number] }> = [
-      { id_: uid(), pos: [rx + rw / 2, h / 2, rz],        size: [rw, h, WALL_T] }, // north
-      { id_: uid(), pos: [rx + rw / 2, h / 2, rz + rd],   size: [rw, h, WALL_T] }, // south
-      { id_: uid(), pos: [rx,          h / 2, rz + rd / 2], size: [WALL_T, h, rd] }, // west
-      { id_: uid(), pos: [rx + rw,     h / 2, rz + rd / 2], size: [WALL_T, h, rd] }, // east
+    const rSafe = room.name.replace(/\s+/g, "_");
+    // Four perimeter walls — named for GLTF node hierarchy
+    const wallDefs: Array<{ id_: string; name_: string; pos: [number, number, number]; size: [number, number, number] }> = [
+      { id_: uid(), name_: `Scotch_Wall_${rSafe}_N`, pos: [rx + rw / 2, h / 2, rz],        size: [rw, h, WALL_T] },
+      { id_: uid(), name_: `Scotch_Wall_${rSafe}_S`, pos: [rx + rw / 2, h / 2, rz + rd],   size: [rw, h, WALL_T] },
+      { id_: uid(), name_: `Scotch_Wall_${rSafe}_W`, pos: [rx,          h / 2, rz + rd / 2], size: [WALL_T, h, rd] },
+      { id_: uid(), name_: `Scotch_Wall_${rSafe}_E`, pos: [rx + rw,     h / 2, rz + rd / 2], size: [WALL_T, h, rd] },
     ];
     for (const w of wallDefs) {
-      boxes.push({ id: w.id_, pos: w.pos, size: w.size, mat: "wall" });
+      boxes.push({ id: w.id_, name: w.name_, pos: w.pos, size: w.size, mat: "wall" });
     }
 
     // Door openings — inset glass box through the wall
@@ -123,7 +129,7 @@ export function buildMassingData(project: ArchitectureProject): MassingData {
         case "east":  pos = [rx + rw,  oy, rz + o + dw / 2]; size = [girth, dh, dw]; break;
         default:      continue;
       }
-      boxes.push({ id: uid(), pos, size, mat: "glass" });
+      boxes.push({ id: uid(), name: `Scotch_Glass_${rSafe}_Door_${door.wall}`, pos, size, mat: "glass" });
     }
 
     // Window openings — glass box at sill height
@@ -144,7 +150,7 @@ export function buildMassingData(project: ArchitectureProject): MassingData {
         case "east":  pos = [rx + rw,  wy, rz + o + ww / 2]; size = [girth, wh, ww]; break;
         default:      continue;
       }
-      boxes.push({ id: uid(), pos, size, mat: "glass" });
+      boxes.push({ id: uid(), name: `Scotch_Glass_${rSafe}_Win_${win.wall}`, pos, size, mat: "glass" });
     }
   }
 

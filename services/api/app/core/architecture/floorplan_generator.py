@@ -17,6 +17,7 @@ never silently fixed.
 from dataclasses import dataclass, field
 
 from app.core.architecture.defaults import DEFAULT_FLOOR_HEIGHT, default_size
+from app.core.architecture.materials import assign_default_materials
 from app.core.architecture.requirement_parser import DesignRequirements
 from app.core.models import (
     ArchitectureProject,
@@ -333,6 +334,8 @@ def generate_floorplan(req: DesignRequirements) -> tuple[ArchitectureProject, st
         notes=[f"Generated deterministically from: “{req.prompt}”"] if req.prompt else [],
         warnings=state.warnings,
     )
+
+    project = assign_default_materials(project)
 
     built = sum(r.width * r.depth for r in rooms)
     summary = (

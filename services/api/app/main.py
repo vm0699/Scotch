@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import exports, generate, health, intelligence, integrations, projects
+from app.api.routes import cameras, exports, generate, health, intelligence, integrations, projects, versions
 from app.api.routes import settings as settings_routes
 from app.config import get_settings
 
@@ -27,8 +27,10 @@ def create_app() -> FastAPI:
     app.include_router(generate.router)
     app.include_router(exports.router)
     app.include_router(intelligence.router)
+    app.include_router(cameras.router)
     app.include_router(integrations.router)
     app.include_router(settings_routes.router)
+    app.include_router(versions.router)
     return app
 
 

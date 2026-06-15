@@ -231,10 +231,18 @@ Status values: ✅ Done · 🔵 In progress · ⬜ Not started
 **Tests:** 18 pytest cases (test_rhino_export.py) — script validity, layers, BooleanDifference, massing height, roof, API flow.  
 **Accept:** Rhino script workflow exists; massing imports; GH strategy documented.
 
-## Phase 17 — Rendering Workflow MVP — ⬜
+## Phase 17 — Rendering Workflow MVP — ✅ Done
 
-Stages: 17.1 render-friendly export (named/grouped hierarchy) · 17.2 material metadata · 17.3 camera suggestions (exterior, top, street, living room, balcony) · 17.4 Blender automation (scene/cameras/lights/materials/render settings) · 17.5 workflow docs (Lumion, D5, Enscape, V-Ray, Blender).
-**Accept:** render-ready exports + Blender automation + documented engine workflows.
+| Stage | Scope | Status |
+|---|---|---|
+| 17.1 Render-friendly export | Consistent `Scotch_Wall_<room>`, `Scotch_Glass_*`, `Scotch_Ground`, `Scotch_Roof` naming in Blender script, SketchUp ruby, and 3D massing GLTF mesh names | ✅ |
+| 17.2 Material metadata | `Material` model extended: `base_color` (hex), `roughness`, `metallic`; `assign_default_materials()` in `materials.py`; 7 element-class + per-room-type mats; injected by generator and sample factory | ✅ |
+| 17.3 Camera suggestions | `CameraSuggestion` model; `derive_cameras()` in `cameras.py` — 5 presets (exterior_quarter, top_ortho, street_eye, living_interior, balcony_view); `GET /projects/{id}/cameras` API; camera preset dropdown in 3D viewer | ✅ |
+| 17.4 Blender automation | 5 cameras with Track-To constraints, 3 lights (Sun Key, Area Fill, Rim), Scotch collections, EEVEE + Cycles preset, 1920×1080, material hints from `project.materials`, headless `--background` note | ✅ |
+| 17.5 Rendering docs | `docs/integrations/rendering-workflows.md` — Blender, Lumion, D5, Enscape, V-Ray; material/camera naming tables; headless instructions; quick-reference table | ✅ |
+
+**Tests:** 43 pytest cases (`test_rendering.py`) — materials, cameras, Blender naming, SketchUp naming, Blender automation (cameras/lights/engine/resolution).
+**Accept:** render-ready exports + Blender automation + documented engine workflows. ✅
 
 ## Phase 18 — Cloud & Account MVP (preparation) — ✅ Done
 
@@ -248,10 +256,18 @@ Stages: 17.1 render-friendly export (named/grouped hierarchy) · 17.2 material m
 
 **Accept:** local mode untouched; abstractions + strategy docs in place. 38/38 tests pass (321 total).
 
-## Phase 19 — Versioning & History MVP — ⬜
+## Phase 19 — Versioning & History MVP — ✅ Done
 
-Stages: 19.1 version model (version_id, created_at, change_type, summary, snapshot) · 19.2 history timeline UI · 19.3 restore version · 19.4 compare strategy (plan/param/area diffs).
-**Accept:** history records, displays, restores.
+| Stage | Description | Status |
+|-------|-------------|--------|
+| 19.1 | Version model — `ProjectVersion`, `ProjectVersionMeta`, `VersionChangeType`; sidecar storage under `versions/`; auto-snapshot on every design-changing PATCH | ✅ |
+| 19.2 | History timeline UI — `HistorySection` component; reverse-chronological list with change-type badge, inline SVG thumbnail, summary, relative time, room count/area | ✅ |
+| 19.3 | Restore version — `POST /versions/{id}/restore`; validates snapshot, writes as active, appends `restore` sidecar (history is append-only); two-step confirm UI | ✅ |
+| 19.4 | Compare/diff strategy — `GET /versions/{a}/diff/{b}` with `VersionDiff`; detects added/removed/resized rooms; `docs/product/version-compare-strategy.md` | ✅ |
+
+Files created: `services/api/app/api/routes/versions.py`, `services/api/tests/test_versions.py`, `apps/web/src/components/workspace/history-section.tsx`, `docs/product/version-compare-strategy.md`
+Files modified: `models/project.py`, `models/__init__.py`, `storage/base.py`, `storage/__init__.py`, `storage/local_store.py`, `storage/cloud_store.py`, `routes/projects.py`, `main.py`, `types.ts`, `client.ts`, `data-panel.tsx`, `workspace.tsx`
+**Accept:** history records, displays, restores, diffs. 29 new pytest cases.
 
 ## Phase 20 — Product Completion & QA MVP — ⬜
 

@@ -6,6 +6,7 @@ Phase 2: a 30 x 50 ft east-facing site, public zone at the entrance, private
 zone at the rear, last 15 ft of the plot unbuilt.
 """
 
+from app.core.architecture.materials import assign_default_materials
 from app.core.models import (
     ArchitectureProject,
     Building,
@@ -20,7 +21,7 @@ from app.core.models import (
 
 
 def create_sample_project() -> ArchitectureProject:
-    return ArchitectureProject(
+    project = ArchitectureProject(
         id="sample-2bhk-east",
         name="2BHK Apartment Concept",
         units="feet",
@@ -74,3 +75,4 @@ def create_sample_project() -> ArchitectureProject:
             ),
         ],
     )
+    return assign_default_materials(project)

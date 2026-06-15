@@ -83,6 +83,25 @@ class Material(BaseModel):
     name: str
     target: str = Field(description="What the material applies to, e.g. wall, floor, roof, glass")
     finish: str | None = None
+    base_color: str = "#F5F4F2"   # hex color hint for render engines
+    roughness: float = Field(default=0.5, ge=0.0, le=1.0)
+    metallic: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
+class CameraSuggestion(BaseModel):
+    """A derived camera preset for rendering.
+
+    position / target use plan-space + height coordinates [plan_x, height, plan_y]
+    which map directly to three.js [x, y, z] (plan_y → Blender Y, height → Blender Z).
+    Values are in project units (feet by default).
+    """
+
+    name: str
+    type: Literal["perspective", "orthographic"]
+    position: list[float]   # [plan_x, height, plan_y]
+    target: list[float]     # [plan_x, height, plan_y]
+    fov: float = 50.0       # degrees; 0 for orthographic
+    description: str = ""
 
 
 class Parameter(BaseModel):
@@ -136,3 +155,30 @@ class DesignOption(BaseModel):
     summary: str
     warnings: list[ProjectWarning] = []
     preview: ArchitectureProject
+
+
+# ── Phase 19: Version history ─────────────────────────────────────────────────
+
+VersionChangeType = Literal["generate", "regenerate", "edit", "option", "restore"]
+
+
+class ProjectVersionMeta(BaseModel):
+    """Lightweight version listing entry — no snapshot, for quick display."""
+
+    version_id: str
+    created_at: datetime
+    change_type: VersionChangeType
+    summary: str
+    room_count: int = 0
+    total_area: float = 0.0
+    thumbnail: str | None = None  # compact inline SVG computed from snapshot
+
+
+class ProjectVersion(BaseModel):
+    """Full version with design snapshot — stored as sidecar file per version."""
+
+    version_id: str
+    created_at: datetime
+    change_type: VersionChangeType
+    summary: str
+    snapshot: ArchitectureProject

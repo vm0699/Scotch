@@ -195,6 +195,8 @@ export function updateProject(
     prompt?: string;
     project?: ArchitectureProject;
     options?: DesignOption[];
+    change_type?: "generate" | "regenerate" | "edit" | "option";
+    version_summary?: string;
   },
 ): Promise<StoredProject> {
   return apiRequest("PATCH", `/projects/${projectId}`, body);
@@ -214,6 +216,33 @@ export function getIntelligence(
   signal?: AbortSignal,
 ): Promise<import("@/features/intelligence/types").IntelligenceReport> {
   return apiGet(`/projects/${projectId}/intelligence?vastu=${vastu}`, { signal });
+}
+
+// ── Cameras (Phase 17) ────────────────────────────────────────────
+
+export function getCameras(
+  projectId: string,
+  signal?: AbortSignal,
+): Promise<import("@/features/project/types").CameraSuggestion[]> {
+  return apiGet(`/projects/${projectId}/cameras`, { signal });
+}
+
+// ── Version history (Phase 19) ────────────────────────────────────────────────
+
+export type { ProjectVersionMeta, ProjectVersion, VersionChangeType } from "@/features/project/types";
+
+export function listVersions(
+  projectId: string,
+  signal?: AbortSignal,
+): Promise<import("@/features/project/types").ProjectVersionMeta[]> {
+  return apiGet(`/projects/${projectId}/versions`, { signal });
+}
+
+export function restoreVersion(
+  projectId: string,
+  versionId: string,
+): Promise<StoredProject> {
+  return apiRequest("POST", `/projects/${projectId}/versions/${versionId}/restore`);
 }
 
 // ── Exports (Phase 7 / 11 / 12 / 13) ────────────────────────────

@@ -50,6 +50,7 @@ export function Workspace({
   const [notice, setNotice] = useState<string | undefined>(undefined);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [editBusy, setEditBusy] = useState(false);
+  const [historyKey, setHistoryKey] = useState(0);
 
   // Phase 9 — generation mode + AI availability
   const [generationMode, setGenerationMode] = useState<GenerationMode>("deterministic");
@@ -107,7 +108,8 @@ export function Workspace({
       );
       setProject(design);
       if (storedId) {
-        await updateProject(storedId, { prompt, project: design });
+        await updateProject(storedId, { prompt, project: design, change_type: "generate" });
+        setHistoryKey((k) => k + 1);
         setNotice(`${summary} Saved to your project.`);
       } else {
         setNotice(`${summary} ${NOTICE_UNSAVED}`);
@@ -130,7 +132,8 @@ export function Workspace({
       const { options } = await generateOptions(prompt, generationMode);
       setDesignOptions(options);
       if (storedId) {
-        await updateProject(storedId, { options });
+        await updateProject(storedId, { options, change_type: "option" });
+        setHistoryKey((k) => k + 1);
       }
     } catch {
       setShowOptions(false);
@@ -147,7 +150,8 @@ export function Workspace({
       setProject(option.preview);
       if (storedId) {
         try {
-          await updateProject(storedId, { prompt, project: option.preview });
+          await updateProject(storedId, { prompt, project: option.preview, change_type: "option" });
+          setHistoryKey((k) => k + 1);
           setNotice(`${option.variant.charAt(0).toUpperCase() + option.variant.slice(1)} option applied and saved.`);
         } catch {
           setNotice("Option applied locally — engine offline, not saved.");
@@ -171,7 +175,8 @@ export function Workspace({
         );
         setProject(updated);
         if (storedId) {
-          await updateProject(storedId, { project: updated });
+          await updateProject(storedId, { project: updated, change_type: "regenerate" });
+          setHistoryKey((k) => k + 1);
           setNotice(`${summary} Saved.`);
         } else {
           setNotice(summary);
@@ -187,6 +192,16 @@ export function Workspace({
       }
     },
     [project, storedId],
+  );
+
+  // Phase 19 — restore a version snapshot as the active design.
+  const handleRestoreVersion = useCallback(
+    (stored: import("@/features/api/client").StoredProject) => {
+      if (stored.project) setProject(stored.project);
+      setHistoryKey((k) => k + 1);
+      setNotice("Restored to a previous version.");
+    },
+    [],
   );
 
   // Stage 4.7 — rename persists when the project is saved.
@@ -243,6 +258,7 @@ export function Workspace({
         )}
         <PreviewPanel
           project={project}
+          projectId={storedId ?? undefined}
           title={title}
           onRename={(name) => void handleRename(name)}
           selectedRoomId={selectedRoomId}
@@ -259,6 +275,8 @@ export function Workspace({
         onSelectRoom={setSelectedRoomId}
         editBusy={editBusy}
         onApplyChanges={(changes) => void handleApplyChanges(changes)}
+        historyKey={historyKey}
+        onRestoreVersion={handleRestoreVersion}
       />
     </div>
   );
