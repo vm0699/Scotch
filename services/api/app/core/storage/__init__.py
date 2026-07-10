@@ -4,6 +4,7 @@ from app.core.storage.base import (
     ProjectStore,
     ProjectSummary,
     StoredProject,
+    VersionNotFoundError,
 )
 from app.core.storage.cloud_store import CloudProjectStore
 from app.core.storage.factory import get_project_store
@@ -15,6 +16,7 @@ __all__ = [
     "ProjectStore",
     "ProjectSummary",
     "StoredProject",
+    "VersionNotFoundError",
     "CloudProjectStore",
     "get_project_store",
     "ProjectIndex",

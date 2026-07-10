@@ -10,6 +10,7 @@ Formats: JSON (7.1), SVG (7.2), PNG (7.3), DXF (7.4/11.1),
 
 from app.core.exports.blender_exporter import export_blender
 from app.core.exports.dxf_exporter import export_dxf
+from app.core.exports.ifc_exporter import export_ifc
 from app.core.exports.json_exporter import export_json
 from app.core.exports.png_exporter import export_png
 from app.core.exports.rhino_exporter import export_rhino
@@ -31,4 +32,5 @@ __all__ = [
     "export_sheet_pdf",
     "export_schedule_json",
     "export_schedule_csv",
+    "export_ifc",
 ]

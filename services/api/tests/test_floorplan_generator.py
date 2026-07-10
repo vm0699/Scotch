@@ -44,7 +44,8 @@ def test_zoning_living_before_bedrooms() -> None:
     project, _ = generate_floorplan(parse_prompt(TEST_PROMPTS[0]))
     rooms = {r.id: r for r in project.rooms}
     assert rooms["living"].y < rooms["bed-master"].y
-    assert rooms["parking"].y == 0  # parking at the entrance
+    # Parking starts nearest the entrance (lowest y after setback inset)
+    assert rooms["parking"].y == min(r.y for r in project.rooms if r.type != "balcony")
     assert rooms["kitchen"].y <= rooms["bed-master"].y  # kitchen between living and bedrooms
 
 
@@ -82,4 +83,78 @@ def test_cafe_program_contents() -> None:
     ids = {r.id for r in project.rooms}
     assert {"seating", "counter", "kitchen", "restroom"} <= ids
     seating = next(r for r in project.rooms if r.id == "seating")
-    assert seating.y == 0  # seating at the entrance
+    # Seating at entrance = minimum y among all rooms (after setback inset)
+    assert seating.y == min(r.y for r in project.rooms)
+
+
+# ── Phase 22 — Multi-floor tests ───────────────────────────────────────────────
+
+
+def test_2bhk_2floor_generates_stair_rooms() -> None:
+    req = parse_prompt("2BHK duplex 30x50 north-facing")
+    req.floors = 2
+    project, _ = generate_floorplan(req)
+    stair_ids = {r.id for r in project.rooms if r.type == "stair"}
+    assert "stair-g" in stair_ids, "expected stair-g on ground floor"
+    assert "stair-1" in stair_ids, "expected stair-1 on floor 1"
+
+
+def test_2bhk_2floor_rooms_across_levels() -> None:
+    req = parse_prompt("2BHK duplex 30x50 north-facing")
+    req.floors = 2
+    project, _ = generate_floorplan(req)
+    levels = {r.level for r in project.rooms}
+    assert 0 in levels, "ground floor must have rooms"
+    assert 1 in levels, "floor 1 must have rooms"
+    # Bedrooms should be on upper floor
+    bed_levels = {r.level for r in project.rooms if r.type == "bedroom"}
+    assert 1 in bed_levels, "bedrooms expected on floor 1 for 2-floor design"
+    # Living room should be on ground floor
+    living = next(r for r in project.rooms if r.type == "living")
+    assert living.level == 0
+
+
+def test_2bhk_2floor_has_correct_level_list() -> None:
+    req = parse_prompt("2BHK duplex 30x50 north-facing")
+    req.floors = 2
+    project, _ = generate_floorplan(req)
+    assert len(project.levels) == 2
+    assert project.levels[0].index == 0
+    assert project.levels[1].index == 1
+    assert project.levels[0].elevation == 0
+    assert project.levels[1].elevation > 0  # elevated by floor_height
+
+
+def test_2bhk_2floor_is_valid() -> None:
+    req = parse_prompt("2BHK duplex 30x50")
+    req.floors = 2
+    project, _ = generate_floorplan(req)
+    result = validate_project(project)
+    assert result.valid, result.errors
+
+
+def test_3bhk_3floor_distributes_rooms_across_floors() -> None:
+    req = parse_prompt("3BHK triplex 40x60")
+    req.floors = 3
+    project, _ = generate_floorplan(req)
+    levels = {r.level for r in project.rooms}
+    assert levels >= {0, 1, 2}, "all three floors must be occupied"
+    assert len([r for r in project.rooms if r.type == "stair"]) == 3
+
+
+def test_single_floor_no_stair_rooms() -> None:
+    req = parse_prompt("2BHK apartment 30x50")
+    project, _ = generate_floorplan(req)
+    stair_rooms = [r for r in project.rooms if r.type == "stair"]
+    assert stair_rooms == [], "single-floor builds must not have stair rooms"
+
+
+def test_multi_floor_rooms_stay_inside_site() -> None:
+    req = parse_prompt("2BHK duplex 30x50 north-facing")
+    req.floors = 2
+    project, _ = generate_floorplan(req)
+    for room in project.rooms:
+        assert room.x >= 0
+        assert room.y >= 0
+        assert room.x + room.width <= project.site.width + 1e-6
+        assert room.y + room.depth <= project.site.depth + 1e-6

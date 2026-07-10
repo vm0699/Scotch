@@ -8,6 +8,7 @@ import {
   ProjectsSection,
 } from "@/components/dashboard/projects-section";
 import { TemplatesSection } from "@/components/dashboard/templates-section";
+import { FeedbackButton } from "@/components/workspace/feedback-button";
 
 const SIDEBAR_ITEMS = [
   { label: "Projects", href: "/dashboard", icon: LayoutGrid, active: true },
@@ -20,7 +21,17 @@ export default function DashboardPage() {
   return (
     <AppShell
       active="/dashboard"
-      sidebar={<Sidebar items={SIDEBAR_ITEMS} footer="Scotch 0.1.0 · local" />}
+      sidebar={
+        <Sidebar
+          items={SIDEBAR_ITEMS}
+          footer={
+            <div className="flex flex-col gap-2">
+              <span>Scotch v1.1 beta · local</span>
+              <FeedbackButton />
+            </div>
+          }
+        />
+      }
     >
       <div className="mx-auto w-full max-w-6xl px-6 py-8">
         <div className="flex flex-wrap items-end justify-between gap-4">

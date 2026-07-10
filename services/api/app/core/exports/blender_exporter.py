@@ -323,6 +323,133 @@ def export_blender(project: ArchitectureProject, output_path: Path) -> bytes:
             L(f"win_cut.hide_viewport = True")
             L("")
 
+    # ── Furniture ─────────────────────────────────────────────────────────────
+    if project.furniture:
+        L("# ── Scotch_Furniture ─────────────────────────────────────────────────────")
+        L("col_furn = ensure_collection('Scotch_Furniture')")
+        L("mat_furn = scotch_mat('Scotch_Furniture', 0.70, 0.63, 0.51, roughness=0.75)")
+        L("")
+        for item in project.furniture:
+            safe_lbl  = _safe(item.label or item.type)
+            safe_id   = item.id[:6]
+            room = next((r for r in project.rooms if r.id == item.room_id), None)
+            base_z_ft = (room.level * project.building.floor_height) if room else 0.0
+            ix  = ft(item.x)
+            iy  = ft(item.y)
+            iz  = ft(base_z_ft)
+            iw  = ft(item.width)
+            id_ = ft(item.depth)
+            ih  = ft(item.height)
+            L(f"box_mesh('Scotch_Furniture_{safe_lbl}_{safe_id}', {ix}, {iy}, {iz}, {iw}, {id_}, {ih}, mat_furn, col_furn)")
+        L("")
+
+    # ── Phase 35: Floor tile overlays from material_plan ─────────────────────
+    if project.material_plan.generated and project.material_plan.room_finishes:
+        _TILE_MATS: dict[str, tuple] = {
+            "marble":    (0.96, 0.94, 0.92),
+            "vitrified": (0.94, 0.92, 0.88),
+            "ceramic":   (0.92, 0.90, 0.86),
+            "granite":   (0.55, 0.50, 0.46),
+            "timber":    (0.62, 0.46, 0.30),
+            "concrete":  (0.70, 0.70, 0.70),
+            "terrazzo":  (0.88, 0.85, 0.82),
+            "hardwood":  (0.55, 0.38, 0.24),
+            "stone":     (0.65, 0.62, 0.58),
+        }
+        L("")
+        L("# ── Phase 35: Floor tile overlays from material plan ─────────────────────")
+        L("col_tiles = ensure_collection('Scotch_Tiles')")
+        L("")
+        for finish in project.material_plan.room_finishes:
+            room = next((r for r in project.rooms if r.id == finish.room_id), None)
+            if not room:
+                continue
+            mat_lower = finish.floor_material.lower()
+            rgb = next((v for k, v in _TILE_MATS.items() if k in mat_lower), None)
+            if not rgb:
+                continue
+            rr2, rg2, rb2 = rgb
+            roughness = 0.25 if "marble" in mat_lower else 0.60
+            metallic  = 0.04 if "marble" in mat_lower else 0.0
+            safe_n = _safe(room.name)
+            inset_ft = WALL_T / 2
+            rx = ft(room.x + inset_ft)
+            ry = ft(room.y + inset_ft)
+            rw = ft(max(0.5, room.width  - inset_ft * 2))
+            rd = ft(max(0.5, room.depth - inset_ft * 2))
+            lvl_z = ft(room.level * (project.building.floor_height or 10.0))
+            L(f"# {room.name} — {finish.floor_material}")
+            L(f"scotch_mat('Scotch_Tile_{safe_n}', {rr2}, {rg2}, {rb2}, roughness={roughness}, metallic={metallic})")
+            L(f"box_mesh('Scotch_Tile_{safe_n}', {rx}, {ry}, {lvl_z}, {rw}, {rd}, 0.02, bpy.data.materials['Scotch_Tile_{safe_n}'], col_tiles)")
+        L("")
+
+    # ── Phase 35: Kitchen counter geometry ───────────────────────────────────
+    KITCHEN_TYPES = {"kitchen", "kitchenette", "pantry"}
+    kitchen_rooms = [r for r in project.rooms if r.type.lower().replace(" ", "_") in KITCHEN_TYPES]
+    if kitchen_rooms:
+        L("")
+        L("# ── Phase 35: Kitchen counters ───────────────────────────────────────────")
+        L("col_counters = ensure_collection('Scotch_Counters')")
+        L("mat_counter  = scotch_mat('Scotch_Counter', 0.67, 0.60, 0.52, roughness=0.55, metallic=0.05)")
+        L("")
+        for room in kitchen_rooms:
+            safe_n = _safe(room.name)
+            inset_ft = WALL_T + 0.05
+            counter_depth = 2.0   # ft
+            counter_h     = 3.0   # ft
+            counter_len   = max(2.0, room.width - inset_ft * 2 - 1.0)
+            cx = ft(room.x + inset_ft)
+            cy = ft(room.y + inset_ft)
+            cw = ft(counter_len)
+            cd = ft(counter_depth)
+            ch = ft(counter_h)
+            lvl_z = ft(room.level * (project.building.floor_height or 10.0))
+            L(f"# {room.name} — main worktop counter along north wall")
+            L(f"box_mesh('Scotch_Counter_{safe_n}_Main', {cx}, {cy}, {lvl_z}, {cw}, {cd}, {ch}, mat_counter, col_counters)")
+            if room.depth > 8:
+                ret_len = min(room.depth / 2, 4)
+                ret_x = ft(room.x + room.width - inset_ft - counter_depth)
+                ret_w = ft(counter_depth)
+                ret_d = ft(ret_len)
+                L(f"box_mesh('Scotch_Counter_{safe_n}_Return', {ret_x}, {cy}, {lvl_z}, {ret_w}, {ret_d}, {ch}, mat_counter, col_counters)")
+        L("")
+
+    # ── Phase 35: MEP 3D blocks ───────────────────────────────────────────────
+    if project.mep_plan.generated:
+        _MEP_SIZES_BL = {
+            "wc":     (ft(1.4), ft(2.0), ft(1.5)),
+            "toilet": (ft(1.4), ft(2.0), ft(1.5)),
+            "basin":  (ft(1.0), ft(1.5), ft(0.75)),
+            "shower": (ft(2.5), ft(3.0), ft(0.15)),
+            "bath":   (ft(2.5), ft(5.0), ft(1.8)),
+            "ac":     (ft(3.0), ft(1.0), ft(0.7)),
+        }
+        all_pts = (
+            list(project.mep_plan.plumbing.points or [])
+            + list(project.mep_plan.ac.points or [])
+        )
+        if all_pts:
+            L("")
+            L("# ── Phase 35: MEP service-point blocks ───────────────────────────────────")
+            L("col_mep = ensure_collection('Scotch_MEP')")
+            L("mat_mep = scotch_mat('Scotch_MEP', 0.73, 0.82, 0.87, roughness=0.45, metallic=0.1)")
+            L("")
+            for pt in all_pts:
+                kind_key = pt.kind.lower().replace(" ", "").replace("-", "")
+                mep_sz = _MEP_SIZES_BL.get(kind_key)
+                if not mep_sz:
+                    continue
+                mw, md, mh = mep_sz
+                room = next((r for r in project.rooms if r.id == pt.room_id), None)
+                base_z = room.level * (project.building.floor_height or 10.0) if room else 0.0
+                is_wall = pt.mount_height > 1.0
+                z_offset = ft(base_z + (pt.mount_height if is_wall else 0.0))
+                px_b = ft(pt.x)
+                py_b = ft(pt.y)
+                safe_pid = pt.id[:6]
+                L(f"box_mesh('Scotch_MEP_{pt.kind}_{safe_pid}', {px_b}, {py_b}, {z_offset}, {mw}, {md}, {mh}, mat_mep, col_mep)")
+            L("")
+
     # ── Roof slab ─────────────────────────────────────────────────────────────
     L("# ── Scotch_Roof ──────────────────────────────────────────────────────────")
     L(f"box_mesh('Scotch_Roof', 0, 0, WALL_H, SITE_W, SITE_D, SLAB_T, mat_roof, col_roof)")

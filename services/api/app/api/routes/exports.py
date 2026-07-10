@@ -20,6 +20,7 @@ from app.core.auth.context import get_current_user_id
 from app.core.exports import (
     export_blender,
     export_dxf,
+    export_ifc,
     export_json,
     export_png,
     export_rhino,
@@ -43,6 +44,7 @@ ExportFormat = Literal[
     "sketchup", "blender", "rhino",
     "sheet_svg", "sheet_pdf",
     "schedule_json", "schedule_csv",
+    "ifc",
 ]
 
 _MIME = {
@@ -56,6 +58,7 @@ _MIME = {
     "py":        "text/x-python",
     "pdf":       "application/pdf",
     "csv":       "text/csv",
+    "ifc":       "application/x-step",
 }
 
 router = APIRouter(prefix="/projects", tags=["exports"])
@@ -73,6 +76,7 @@ _EXT = {
     "sheet_pdf":     "pdf",
     "schedule_json": "json",
     "schedule_csv":  "csv",
+    "ifc":           "ifc",
 }
 
 _BASENAME = {
@@ -81,6 +85,7 @@ _BASENAME = {
     "sheet_pdf":     "presentation_sheet",
     "schedule_json": "room_schedule",
     "schedule_csv":  "room_schedule",
+    "ifc":           "model",
 }
 
 
@@ -141,6 +146,8 @@ def trigger_export(
         export_schedule_json(project, output_path)
     elif fmt == "schedule_csv":
         export_schedule_csv(project, output_path)
+    elif fmt == "ifc":
+        export_ifc(project, output_path)
 
     manifest = ExportManifest(
         filename=filename,

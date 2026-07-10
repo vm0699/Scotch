@@ -36,6 +36,11 @@ class DesignRequirements(BaseModel):
     prompt: str
     # Multiplier applied to all default room sizes; 1.0 = standard, <1 = compact, >1 = spacious.
     size_modifier: float = 1.0
+    # NBC byelaw parameters (Phase 27.2); defaults match India urban residential zone.
+    front_setback: float = 9.84   # 3 m
+    side_setback:  float = 4.92   # 1.5 m per side
+    rear_setback:  float = 9.84   # 3 m
+    max_fsi:       float = 1.5
 
 
 _SIZE = re.compile(r"(\d+(?:\.\d+)?)\s*[x×*]\s*(\d+(?:\.\d+)?)\s*(?:ft|feet|')?", re.I)

@@ -569,3 +569,90 @@ def test_api_download_sheet_pdf(client, project_with_design):
     assert r.status_code == 200
     assert r.content[:4] == b"%PDF"
     assert r.headers["content-type"] == "application/pdf"
+
+
+# ── Phase 22 — IFC exporter ───────────────────────────────────────────────────
+
+
+def test_ifc_exporter_writes_file(tmp_path, sample):
+    import ifcopenshell
+    from app.core.exports import export_ifc
+    out = tmp_path / "model.ifc"
+    export_ifc(sample, out)
+    assert out.exists()
+    assert out.stat().st_size > 100
+
+
+def test_ifc_file_is_parseable(tmp_path, sample):
+    import ifcopenshell
+    from app.core.exports import export_ifc
+    out = tmp_path / "model.ifc"
+    export_ifc(sample, out)
+    ifc = ifcopenshell.open(str(out))
+    assert ifc is not None
+
+
+def test_ifc_has_correct_space_count(tmp_path, sample):
+    import ifcopenshell
+    from app.core.exports import export_ifc
+    out = tmp_path / "model.ifc"
+    export_ifc(sample, out)
+    ifc = ifcopenshell.open(str(out))
+    spaces = ifc.by_type("IfcSpace")
+    assert len(spaces) == len(sample.rooms), (
+        f"Expected {len(sample.rooms)} IfcSpace elements, got {len(spaces)}"
+    )
+
+
+def test_ifc_has_building_storey(tmp_path, sample):
+    import ifcopenshell
+    from app.core.exports import export_ifc
+    out = tmp_path / "model.ifc"
+    export_ifc(sample, out)
+    ifc = ifcopenshell.open(str(out))
+    storeys = ifc.by_type("IfcBuildingStorey")
+    # Single-floor sample has one storey
+    assert len(storeys) >= 1
+
+
+def test_ifc_space_names_match_rooms(tmp_path, sample):
+    import ifcopenshell
+    from app.core.exports import export_ifc
+    out = tmp_path / "model.ifc"
+    export_ifc(sample, out)
+    ifc = ifcopenshell.open(str(out))
+    space_names = {s.Name for s in ifc.by_type("IfcSpace")}
+    for room in sample.rooms:
+        assert room.name in space_names, f"Room {room.name!r} not found in IFC spaces"
+
+
+def test_ifc_multi_floor_has_multiple_storeys(tmp_path):
+    import ifcopenshell
+    from app.core.architecture.floorplan_generator import generate_floorplan
+    from app.core.architecture.requirement_parser import parse_prompt
+    from app.core.exports import export_ifc
+    req = parse_prompt("2BHK duplex 30x50")
+    req.floors = 2
+    project, _ = generate_floorplan(req)
+    out = tmp_path / "model.ifc"
+    export_ifc(project, out)
+    ifc = ifcopenshell.open(str(out))
+    storeys = ifc.by_type("IfcBuildingStorey")
+    assert len(storeys) == 2, f"Expected 2 storeys, got {len(storeys)}"
+
+
+def test_api_export_ifc(client, project_with_design):
+    r = client.post(f"/projects/{project_with_design}/exports/ifc")
+    assert r.status_code == 201
+    body = r.json()
+    assert body["format"] == "ifc"
+    assert body["filename"] == "model.ifc"
+
+
+def test_api_download_ifc(client, project_with_design):
+    import ifcopenshell
+    client.post(f"/projects/{project_with_design}/exports/ifc")
+    r = client.get(f"/projects/{project_with_design}/exports/model.ifc")
+    assert r.status_code == 200
+    # IFC STEP files start with "ISO-10303-21"
+    assert b"ISO-10303-21" in r.content[:100]

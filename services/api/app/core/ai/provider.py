@@ -1,11 +1,118 @@
-"""AI provider abstraction — deterministic, Anthropic, OpenAI-compatible, hybrid."""
+"""AI provider abstraction — deterministic, Anthropic, OpenAI-compatible, hybrid.
+
+Also contains RenderProvider ABC for Phase 23 in-app rendering.
+"""
 
 from __future__ import annotations
 
+import base64
 import uuid
 from abc import ABC, abstractmethod
 
 from app.core.models import ArchitectureProject, ProjectWarning
+
+# ── Render providers (Phase 23) ───────────────────────────────────────────────
+
+# Minimal 8×8 gray PNG (deterministic placeholder when no conditioning image).
+_PLACEHOLDER_PNG = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAD"
+    "ElEQVQI12NgGAQAAAgABFlCdOQAAAAASUVORK5CYII="
+)
+
+
+class RenderProvider(ABC):
+    """Interface for all image-render backends."""
+
+    @abstractmethod
+    def render_image(
+        self,
+        project: ArchitectureProject,
+        camera_id: str,
+        style: str,
+        conditioning_b64: str | None,
+        *,
+        prompt_override: str | None = None,
+    ) -> bytes:
+        """Return PNG bytes for the rendered image."""
+
+
+class DeterministicRenderProvider(RenderProvider):
+    """No-key fallback: returns the massing capture as-is (always succeeds)."""
+
+    def render_image(
+        self,
+        project: ArchitectureProject,
+        camera_id: str,
+        style: str,
+        conditioning_b64: str | None,
+        *,
+        prompt_override: str | None = None,
+    ) -> bytes:
+        if conditioning_b64:
+            data = (
+                conditioning_b64.split(",", 1)[1]
+                if "," in conditioning_b64
+                else conditioning_b64
+            )
+            return base64.b64decode(data)
+        return _PLACEHOLDER_PNG
+
+
+class StableDiffusionRenderProvider(RenderProvider):
+    """img2img via a Stable Diffusion web-UI compatible API endpoint."""
+
+    def __init__(self, api_url: str, api_key: str = "") -> None:
+        self._api_url = api_url.rstrip("/")
+        self._api_key = api_key
+
+    def render_image(
+        self,
+        project: ArchitectureProject,
+        camera_id: str,
+        style: str,
+        conditioning_b64: str | None,
+        *,
+        prompt_override: str | None = None,
+    ) -> bytes:
+        import json as _json
+        import urllib.request
+
+        from app.core.render.styles import get_style
+
+        style_def = get_style(style)
+        base_prompt = prompt_override or f"architectural render, {style_def.prompt_suffix}"
+        payload = {
+            "init_images": [conditioning_b64 or ""],
+            "prompt": base_prompt,
+            "negative_prompt": style_def.negative_prompt,
+            "denoising_strength": 0.65 if prompt_override else 0.65,
+            "steps": 20,
+            "cfg_scale": 7,
+            "width": 512,
+            "height": 512,
+        }
+        req = urllib.request.Request(
+            f"{self._api_url}/sdapi/v1/img2img",
+            data=_json.dumps(payload).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        if self._api_key:
+            req.add_header("Authorization", f"Bearer {self._api_key}")
+        with urllib.request.urlopen(req, timeout=60) as resp:  # noqa: S310
+            result = _json.loads(resp.read())
+        return base64.b64decode(result["images"][0])
+
+
+def get_render_provider() -> RenderProvider:
+    """Return the configured render provider, defaulting to deterministic."""
+    import os
+
+    sd_url = os.environ.get("SCOTCH_SD_URL", "").strip()
+    sd_key = os.environ.get("SCOTCH_SD_KEY", "").strip()
+    if sd_url:
+        return StableDiffusionRenderProvider(api_url=sd_url, api_key=sd_key)
+    return DeterministicRenderProvider()
 
 
 class AIProvider(ABC):

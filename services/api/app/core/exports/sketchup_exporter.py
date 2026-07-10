@@ -305,6 +305,33 @@ def export_sketchup(project: ArchitectureProject, output_path: Path) -> bytes:
     L("roof_face.pushpull(SLAB_T)")
     L("")
 
+    # ── Furniture (S-FURNITURE tag) ───────────────────────────────────────────
+    if project.furniture:
+        L("# ── Furniture (S-FURNITURE tag) ─────────────────────────────────────────")
+        L("tag_furn  = scotch_tag(model, 'S-FURNITURE')")
+        L("mat_furn  = scotch_mat(mats, 'Scotch_Furniture', 180, 160, 130)")
+        for item in project.furniture:
+            safe_lbl = item.label.replace(" ", "_").replace("'", "")
+            safe_id  = item.id[:8]
+            x0, y0   = item.x, item.y
+            iw, id_  = item.width, item.depth
+            fh_val   = item.height
+            L(f"# {item.label} ({item.type})")
+            L(f"fg = entities.add_group")
+            L(f"fg.layer = tag_furn")
+            L(f"fg.name  = 'Scotch_Furniture_{safe_lbl}_{safe_id}'")
+            L(f"fe = fg.entities")
+            L(f"fpts = [")
+            L(f"  Geom::Point3d.new({x0}  * FT, {y0}  * FT, 0),")
+            L(f"  Geom::Point3d.new({x0 + iw} * FT, {y0}  * FT, 0),")
+            L(f"  Geom::Point3d.new({x0 + iw} * FT, {y0 + id_} * FT, 0),")
+            L(f"  Geom::Point3d.new({x0}  * FT, {y0 + id_} * FT, 0),")
+            L(f"]")
+            L(f"ff = fe.add_face(fpts)")
+            L(f"ff.material = mat_furn")
+            L(f"ff.pushpull({fh_val} * FT)")
+            L(f"")
+
     # ── Room labels ───────────────────────────────────────────────────────────
     L("# ── Room Labels (S-LABELS tag) ───────────────────────────────────────────")
     L("lbl_grp       = entities.add_group")

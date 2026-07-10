@@ -224,17 +224,91 @@ def export_svg(project: ArchitectureProject, output_path: Path) -> bytes:
         _north_arrow_svg(sw + 34, 4, site.orientation),
     ])
 
-    svg = "\n".join([
-        '<?xml version="1.0" encoding="UTF-8"?>',
-        f'<svg viewBox="0 0 {vw:.2f} {vh:.2f}" xmlns="http://www.w3.org/2000/svg"'
-        f' aria-label="{escape(project.name)} — floor plan">',
-        f'  <g transform="translate({MARGIN} {MARGIN})">',
+    # ── MEP layers (named: P-PIPE, P-FIXTURE, E-LIGHT, E-SWITCH, E-SOCKET, E-ROUTE, M-AC) ──
+    mep = getattr(project, "mep_plan", None)
+    mep_layers: list[str] = []
+    if mep and getattr(mep, "generated", False):
+        # Colours: plumbing=blue, electrical=orange, lighting=yellow, ac=cyan
+        _MEP_COLORS = {
+            "plumbing": "#1a6eb5",
+            "electrical": "#d97706",
+            "lighting": "#ca8a04",
+            "ac": "#0891b2",
+        }
+        _MEP_LAYER_IDS = {
+            ("plumbing", "wc"): "P-FIXTURE",
+            ("plumbing", "sink"): "P-FIXTURE",
+            ("plumbing", "basin"): "P-FIXTURE",
+            ("plumbing", "shower"): "P-FIXTURE",
+            ("plumbing", "supply"): "P-PIPE",
+            ("plumbing", "drain"): "P-PIPE",
+            ("electrical", "switch"): "E-SWITCH",
+            ("electrical", "socket"): "E-SOCKET",
+            ("electrical", "circuit"): "E-ROUTE",
+            ("electrical", "branch"): "E-ROUTE",
+            ("lighting", "ceiling"): "E-LIGHT",
+            ("ac", "ac_unit"): "M-AC",
+        }
+
+        def _pt_svg(pt_x: float, pt_y: float, color: str, r: float = 3.0) -> str:
+            return (
+                f'<circle cx="{pt_x * SCALE:.2f}" cy="{pt_y * SCALE:.2f}" r="{r}" '
+                f'fill="{color}" opacity="0.85"/>'
+            )
+
+        def _route_svg(polyline: list, color: str) -> str:
+            if len(polyline) < 2:
+                return ""
+            pts = " ".join(f"{p[0] * SCALE:.2f},{p[1] * SCALE:.2f}" for p in polyline)
+            return (
+                f'<polyline points="{pts}" fill="none" stroke="{color}" '
+                f'stroke-width="0.8" stroke-dasharray="4 2" opacity="0.7"/>'
+            )
+
+        # Collect by named layer
+        layer_elems: dict[str, list[str]] = {}
+
+        for pt in mep.plumbing.points:
+            layer_id = _MEP_LAYER_IDS.get(("plumbing", pt.kind), "P-FIXTURE")
+            layer_elems.setdefault(layer_id, []).append(_pt_svg(pt.x, pt.y, _MEP_COLORS["plumbing"]))
+        for rt in mep.plumbing.routes:
+            layer_id = _MEP_LAYER_IDS.get(("plumbing", rt.kind), "P-PIPE")
+            layer_elems.setdefault(layer_id, []).append(_route_svg(rt.polyline, _MEP_COLORS["plumbing"]))
+
+        for pt in mep.electrical.points:
+            layer_id = _MEP_LAYER_IDS.get(("electrical", pt.kind), "E-SOCKET")
+            layer_elems.setdefault(layer_id, []).append(_pt_svg(pt.x, pt.y, _MEP_COLORS["electrical"], r=2.5))
+        for rt in mep.electrical.routes:
+            layer_id = _MEP_LAYER_IDS.get(("electrical", rt.kind), "E-ROUTE")
+            layer_elems.setdefault(layer_id, []).append(_route_svg(rt.polyline, _MEP_COLORS["electrical"]))
+
+        for pt in mep.lighting.points:
+            layer_id = _MEP_LAYER_IDS.get(("lighting", pt.kind), "E-LIGHT")
+            layer_elems.setdefault(layer_id, []).append(_pt_svg(pt.x, pt.y, _MEP_COLORS["lighting"], r=2.5))
+
+        for pt in mep.ac.points:
+            layer_id = _MEP_LAYER_IDS.get(("ac", pt.kind), "M-AC")
+            layer_elems.setdefault(layer_id, []).append(_pt_svg(pt.x, pt.y, _MEP_COLORS["ac"], r=3.5))
+
+        for layer_id, elems in layer_elems.items():
+            inner = "\n".join(elems)
+            mep_layers.append(f'    <g id="{layer_id}">\n{inner}\n    </g>')
+
+    svg_layers = [
         f'    <g id="site">\n{site_g}\n    </g>',
         f'    <g id="rooms">\n{rooms_g}\n    </g>',
         f'    <g id="doors">\n{doors_g}\n    </g>',
         f'    <g id="windows">\n{windows_g}\n    </g>',
         f'    <g id="labels">\n{labels_g}\n    </g>',
         f'    <g id="dimensions">\n{dims_g}\n    </g>',
+    ] + mep_layers
+
+    svg = "\n".join([
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        f'<svg viewBox="0 0 {vw:.2f} {vh:.2f}" xmlns="http://www.w3.org/2000/svg"'
+        f' aria-label="{escape(project.name)} — floor plan">',
+        f'  <g transform="translate({MARGIN} {MARGIN})">',
+        *svg_layers,
         "  </g>",
         "</svg>",
     ])

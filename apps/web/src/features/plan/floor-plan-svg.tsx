@@ -1,7 +1,10 @@
 import type {
   ArchitectureProject,
   Door,
+  FurnitureItem,
+  MEPSystem,
   Room,
+  ServicePoint,
   WallSide,
   WindowOpening,
 } from "@/features/project/types";
@@ -288,12 +291,555 @@ function NorthArrow({
   );
 }
 
+// ── Furniture symbols ─────────────────────────────────────────────────────────
+
+/**
+ * Renders one architectural plan symbol for a FurnitureItem.
+ * All coordinates are in pixels; the outer <g> handles plan-to-px translation
+ * and symbol rotation around the item centroid.
+ *
+ * Symbol coordinate system: (0,0) = top-left of item bounding box.
+ * w / h are item width / depth in pixels.
+ */
+function FurnitureSymbol({ item }: { item: FurnitureItem }) {
+  const px = item.x * SCALE;
+  const py = item.y * SCALE;
+  const pw = item.width * SCALE;
+  const ph = item.depth * SCALE;
+  const cx = px + pw / 2;
+  const cy = py + ph / 2;
+
+  const baseClass =
+    "fill-none stroke-muted-foreground/70";
+  const fillClass = "fill-muted/30 stroke-muted-foreground/70";
+  const sw = 0.7; // default stroke-width
+
+  const type = item.type;
+
+  function symbol() {
+    // ── Beds ──────────────────────────────────────────────────────────────
+    if (type === "double_bed" || type === "king_bed" || type === "single_bed") {
+      const headH = ph * 0.14;
+      return (
+        <g>
+          <rect x={px} y={py} width={pw} height={ph} rx={2} className={fillClass} strokeWidth={sw} />
+          {/* headboard */}
+          <rect x={px} y={py} width={pw} height={headH} rx={1} className="fill-muted-foreground/20 stroke-muted-foreground/70" strokeWidth={sw} />
+          {/* pillows */}
+          {[0.22, 0.62].map((t) => (
+            <ellipse key={t} cx={px + pw * t} cy={py + headH + ph * 0.12} rx={pw * 0.14} ry={ph * 0.07}
+              className="fill-card stroke-muted-foreground/50" strokeWidth={0.6} />
+          ))}
+        </g>
+      );
+    }
+
+    // ── Wardrobe ──────────────────────────────────────────────────────────
+    if (type === "wardrobe" || type === "wardrobe_2") {
+      return (
+        <g>
+          <rect x={px} y={py} width={pw} height={ph} className={fillClass} strokeWidth={sw} />
+          {/* cross hatching — two X lines for double-door wardrobe */}
+          <line x1={px} y1={py} x2={px + pw / 2} y2={py + ph} className={baseClass} strokeWidth={sw} />
+          <line x1={px + pw / 2} y1={py} x2={px} y2={py + ph} className={baseClass} strokeWidth={sw} />
+          <line x1={px + pw / 2} y1={py} x2={px + pw} y2={py + ph} className={baseClass} strokeWidth={sw} />
+          <line x1={px + pw} y1={py} x2={px + pw / 2} y2={py + ph} className={baseClass} strokeWidth={sw} />
+          {/* centre divider */}
+          <line x1={px + pw / 2} y1={py} x2={px + pw / 2} y2={py + ph} className={baseClass} strokeWidth={sw} />
+        </g>
+      );
+    }
+
+    // ── Dresser / dressing table ───────────────────────────────────────────
+    if (type === "dresser" || type === "dressing_table") {
+      const drawH = ph * 0.3;
+      return (
+        <g>
+          <rect x={px} y={py} width={pw} height={ph} className={fillClass} strokeWidth={sw} />
+          {[0, 1, 2].map((i) => (
+            <rect key={i} x={px + 3} y={py + drawH * i + 3} width={pw - 6} height={drawH - 3}
+              rx={1} className={baseClass} strokeWidth={0.5} />
+          ))}
+        </g>
+      );
+    }
+
+    // ── Sofa ──────────────────────────────────────────────────────────────
+    if (type === "sofa") {
+      const backH = ph * 0.28;
+      const armW = pw * 0.1;
+      return (
+        <g>
+          <rect x={px} y={py} width={pw} height={ph} rx={3} className={fillClass} strokeWidth={sw} />
+          {/* back */}
+          <rect x={px} y={py} width={pw} height={backH} rx={2} className="fill-muted-foreground/15 stroke-muted-foreground/70" strokeWidth={sw} />
+          {/* arms */}
+          <rect x={px} y={py + backH} width={armW} height={ph - backH} rx={2} className="fill-muted-foreground/15 stroke-muted-foreground/70" strokeWidth={sw} />
+          <rect x={px + pw - armW} y={py + backH} width={armW} height={ph - backH} rx={2} className="fill-muted-foreground/15 stroke-muted-foreground/70" strokeWidth={sw} />
+          {/* seat cushion dividers */}
+          <line x1={px + pw / 3} y1={py + backH + 2} x2={px + pw / 3} y2={py + ph - 2} className={baseClass} strokeWidth={0.6} />
+          <line x1={px + 2 * pw / 3} y1={py + backH + 2} x2={px + 2 * pw / 3} y2={py + ph - 2} className={baseClass} strokeWidth={0.6} />
+        </g>
+      );
+    }
+
+    // ── Armchair ──────────────────────────────────────────────────────────
+    if (type === "armchair_l" || type === "armchair_r" || type === "armchair") {
+      const backH = ph * 0.28;
+      const armW = pw * 0.14;
+      return (
+        <g>
+          <rect x={px} y={py} width={pw} height={ph} rx={3} className={fillClass} strokeWidth={sw} />
+          <rect x={px} y={py} width={pw} height={backH} rx={2} className="fill-muted-foreground/15 stroke-muted-foreground/70" strokeWidth={sw} />
+          <rect x={px} y={py + backH} width={armW} height={ph - backH} rx={2} className="fill-muted-foreground/15 stroke-muted-foreground/70" strokeWidth={sw} />
+          <rect x={px + pw - armW} y={py + backH} width={armW} height={ph - backH} rx={2} className="fill-muted-foreground/15 stroke-muted-foreground/70" strokeWidth={sw} />
+        </g>
+      );
+    }
+
+    // ── Coffee table ──────────────────────────────────────────────────────
+    if (type === "coffee_table") {
+      return (
+        <g>
+          <rect x={px + 2} y={py + 2} width={pw - 4} height={ph - 4} className={fillClass} strokeWidth={sw} />
+        </g>
+      );
+    }
+
+    // ── Side table ────────────────────────────────────────────────────────
+    if (type === "side_table") {
+      return <rect x={px + 1} y={py + 1} width={pw - 2} height={ph - 2} className={fillClass} strokeWidth={sw} />;
+    }
+
+    // ── TV unit ───────────────────────────────────────────────────────────
+    if (type === "tv_unit") {
+      return (
+        <g>
+          <rect x={px} y={py} width={pw} height={ph} className={fillClass} strokeWidth={sw} />
+          {/* screen suggestion */}
+          <rect x={px + pw * 0.15} y={py + ph * 0.15} width={pw * 0.7} height={ph * 0.55}
+            className={baseClass} strokeWidth={0.6} strokeDasharray="2 1.5" />
+        </g>
+      );
+    }
+
+    // ── Dining table ──────────────────────────────────────────────────────
+    if (type === "dining_table") {
+      return (
+        <rect x={px} y={py} width={pw} height={ph} rx={4} className={fillClass} strokeWidth={sw} />
+      );
+    }
+
+    // ── Dining chairs (generic) ───────────────────────────────────────────
+    if (type.startsWith("chair_") || type.startsWith("outdoor_chair")) {
+      const backH = ph * 0.3;
+      return (
+        <g>
+          <rect x={px} y={py} width={pw} height={ph} rx={2} className={fillClass} strokeWidth={sw} />
+          <rect x={px} y={py} width={pw} height={backH} rx={1} className="fill-muted-foreground/20 stroke-muted-foreground/60" strokeWidth={0.6} />
+        </g>
+      );
+    }
+
+    // ── Sideboard ─────────────────────────────────────────────────────────
+    if (type === "sideboard") {
+      return (
+        <g>
+          <rect x={px} y={py} width={pw} height={ph} className={fillClass} strokeWidth={sw} />
+          <line x1={cx} y1={py} x2={cx} y2={py + ph} className={baseClass} strokeWidth={0.5} />
+        </g>
+      );
+    }
+
+    // ── Desk ──────────────────────────────────────────────────────────────
+    if (type === "desk") {
+      const returnW = pw * 0.35;
+      const returnH = ph * 0.45;
+      return (
+        <g>
+          <rect x={px} y={py} width={pw} height={ph * 0.55} className={fillClass} strokeWidth={sw} />
+          <rect x={px} y={py + ph * 0.55 - returnH} width={returnW} height={returnH} className={fillClass} strokeWidth={sw} />
+        </g>
+      );
+    }
+
+    // ── Office chair ──────────────────────────────────────────────────────
+    if (type === "office_chair") {
+      return (
+        <g>
+          <circle cx={cx} cy={cy} r={Math.min(pw, ph) / 2 - 1} className={fillClass} strokeWidth={sw} />
+          {/* back arc */}
+          <path d={`M ${px + 2} ${py + ph * 0.4} A ${pw / 2} ${ph / 2} 0 0 1 ${px + pw - 2} ${py + ph * 0.4}`}
+            className={baseClass} strokeWidth={sw} />
+        </g>
+      );
+    }
+
+    // ── Bookshelf ─────────────────────────────────────────────────────────
+    if (type.startsWith("bookshelf")) {
+      const shelves = 4;
+      const sh = ph / shelves;
+      return (
+        <g>
+          <rect x={px} y={py} width={pw} height={ph} className={fillClass} strokeWidth={sw} />
+          {Array.from({ length: shelves - 1 }).map((_, i) => (
+            <line key={i} x1={px + 1} y1={py + sh * (i + 1)} x2={px + pw - 1} y2={py + sh * (i + 1)}
+              className={baseClass} strokeWidth={0.5} />
+          ))}
+        </g>
+      );
+    }
+
+    // ── WC ────────────────────────────────────────────────────────────────
+    if (type === "wc") {
+      const tankH = ph * 0.28;
+      const bowlH = ph - tankH;
+      return (
+        <g>
+          {/* tank */}
+          <rect x={px} y={py} width={pw} height={tankH} rx={1} className={fillClass} strokeWidth={sw} />
+          {/* bowl — D shape */}
+          <path d={`M ${px} ${py + tankH} L ${px} ${py + ph - 2} Q ${px + pw / 2} ${py + ph + 4} ${px + pw} ${py + ph - 2} L ${px + pw} ${py + tankH} Z`}
+            className={fillClass} strokeWidth={sw} />
+          {/* bowl opening */}
+          <ellipse cx={cx} cy={py + tankH + bowlH * 0.55} rx={pw * 0.38} ry={bowlH * 0.38}
+            className="fill-card stroke-muted-foreground/60" strokeWidth={0.6} />
+        </g>
+      );
+    }
+
+    // ── Basin ─────────────────────────────────────────────────────────────
+    if (type === "basin") {
+      return (
+        <g>
+          <rect x={px} y={py} width={pw} height={ph} rx={3} className={fillClass} strokeWidth={sw} />
+          <ellipse cx={cx} cy={cy + ph * 0.05} rx={pw * 0.38} ry={ph * 0.36}
+            className="fill-card stroke-muted-foreground/60" strokeWidth={0.6} />
+          {/* tap dot */}
+          <circle cx={cx} cy={py + ph * 0.15} r={1.5} className="fill-muted-foreground/60" />
+        </g>
+      );
+    }
+
+    // ── Shower ────────────────────────────────────────────────────────────
+    if (type === "shower") {
+      const g2 = 6;
+      return (
+        <g>
+          <rect x={px} y={py} width={pw} height={ph} className={fillClass} strokeWidth={sw} />
+          {/* corner lines — shower tray indicator */}
+          <line x1={px} y1={py + g2} x2={px + g2} y2={py} className={baseClass} strokeWidth={0.6} />
+          <line x1={px + pw} y1={py + g2} x2={px + pw - g2} y2={py} className={baseClass} strokeWidth={0.6} />
+          <line x1={px} y1={py + ph - g2} x2={px + g2} y2={py + ph} className={baseClass} strokeWidth={0.6} />
+          <line x1={px + pw} y1={py + ph - g2} x2={px + pw - g2} y2={py + ph} className={baseClass} strokeWidth={0.6} />
+          {/* head */}
+          <circle cx={cx} cy={cy} r={Math.min(pw, ph) * 0.18}
+            className="fill-muted-foreground/20 stroke-muted-foreground/60" strokeWidth={0.6} />
+        </g>
+      );
+    }
+
+    // ── Bathtub ───────────────────────────────────────────────────────────
+    if (type === "bathtub") {
+      return (
+        <g>
+          <rect x={px} y={py} width={pw} height={ph} rx={pw * 0.12} className={fillClass} strokeWidth={sw} />
+          <ellipse cx={cx} cy={cy + ph * 0.1} rx={pw * 0.38} ry={ph * 0.38}
+            className="fill-card stroke-muted-foreground/50" strokeWidth={0.6} />
+          {/* tap end */}
+          <rect x={px + pw * 0.3} y={py + 3} width={pw * 0.4} height={6} rx={2}
+            className="fill-muted-foreground/25 stroke-muted-foreground/60" strokeWidth={0.5} />
+        </g>
+      );
+    }
+
+    // ── Refrigerator ──────────────────────────────────────────────────────
+    if (type === "refrigerator") {
+      const divY = py + ph * 0.35;
+      return (
+        <g>
+          <rect x={px} y={py} width={pw} height={ph} rx={2} className={fillClass} strokeWidth={sw} />
+          <line x1={px + 2} y1={divY} x2={px + pw - 2} y2={divY} className={baseClass} strokeWidth={0.6} />
+          {/* handles */}
+          <line x1={px + pw * 0.2} y1={py + ph * 0.12} x2={px + pw * 0.2} y2={py + ph * 0.28}
+            className={baseClass} strokeWidth={1.2} />
+          <line x1={px + pw * 0.2} y1={divY + ph * 0.1} x2={px + pw * 0.2} y2={divY + ph * 0.25}
+            className={baseClass} strokeWidth={1.2} />
+        </g>
+      );
+    }
+
+    // ── Counter (kitchen) ─────────────────────────────────────────────────
+    if (type.startsWith("counter")) {
+      return (
+        <g>
+          <rect x={px} y={py} width={pw} height={ph} className={fillClass} strokeWidth={sw} />
+          {/* front edge shadow */}
+          <rect x={px} y={py + ph - 3} width={pw} height={3} className="fill-muted-foreground/20" />
+        </g>
+      );
+    }
+
+    // ── Cooktop ───────────────────────────────────────────────────────────
+    if (type === "cooktop") {
+      return (
+        <g>
+          <rect x={px} y={py} width={pw} height={ph} className={fillClass} strokeWidth={sw} />
+          {[[0.28, 0.3], [0.72, 0.3], [0.28, 0.7], [0.72, 0.7]].map(([tx, ty], i) => (
+            <circle key={i} cx={px + pw * tx} cy={py + ph * ty} r={Math.min(pw, ph) * 0.14}
+              className={baseClass} strokeWidth={0.6} />
+          ))}
+        </g>
+      );
+    }
+
+    // ── Shelving / storage ────────────────────────────────────────────────
+    if (type.startsWith("shelving") || type === "shoe_rack") {
+      const cols = Math.max(1, Math.floor(pw / 14));
+      const colW = pw / cols;
+      return (
+        <g>
+          <rect x={px} y={py} width={pw} height={ph} className={fillClass} strokeWidth={sw} />
+          {Array.from({ length: cols - 1 }).map((_, i) => (
+            <line key={i} x1={px + colW * (i + 1)} y1={py + 1} x2={px + colW * (i + 1)} y2={py + ph - 1}
+              className={baseClass} strokeWidth={0.5} />
+          ))}
+        </g>
+      );
+    }
+
+    // ── Console / outdoor table ───────────────────────────────────────────
+    if (type === "console_table" || type === "outdoor_table") {
+      return <rect x={px} y={py} width={pw} height={ph} rx={2} className={fillClass} strokeWidth={sw} />;
+    }
+
+    // ── Generic fallback ──────────────────────────────────────────────────
+    return <rect x={px} y={py} width={pw} height={ph} className={fillClass} strokeWidth={sw} />;
+  }
+
+  return (
+    <g opacity={0.85}>
+      {symbol()}
+    </g>
+  );
+}
+
+function FurnitureLayer({
+  project,
+  visibleRoomIds,
+  show,
+}: {
+  project: ArchitectureProject;
+  visibleRoomIds: Set<string>;
+  /** Override project.show_furniture for canvas-level toggle. */
+  show?: boolean;
+}) {
+  const shouldShow = show !== undefined ? show : project.show_furniture;
+  if (!shouldShow) return null;
+  const visible = project.furniture.filter((f) => visibleRoomIds.has(f.room_id));
+  if (visible.length === 0) return null;
+
+  return (
+    <g>
+      {visible.map((item) => (
+        <FurnitureSymbol key={item.id} item={item} />
+      ))}
+    </g>
+  );
+}
+
+// ── Room-level dimension layer (Phase 29.0) ───────────────────────────────────
+
+function RoomDimensionLines({ rooms }: { rooms: Room[] }) {
+  const dimOff = 10; // px offset from room edge for the dimension tick line
+  return (
+    <g className="stroke-blue-400/60" strokeWidth={0.6} fontSize={7}>
+      {rooms.map((room) => {
+        const rx = room.x * SCALE;
+        const ry = room.y * SCALE;
+        const rw = room.width * SCALE;
+        const rd = room.depth * SCALE;
+        const wLabel = `${room.width}′`;
+        const dLabel = `${room.depth}′`;
+        const mx = rx + rw / 2;
+        const my = ry + rd / 2;
+        return (
+          <g key={`rdim-${room.id}`}>
+            {/* Width dim above room */}
+            <line x1={rx} y1={ry - 6} x2={rx + rw} y2={ry - 6} />
+            <line x1={rx} y1={ry - 9} x2={rx} y2={ry - 3} />
+            <line x1={rx + rw} y1={ry - 9} x2={rx + rw} y2={ry - 3} />
+            <text
+              x={mx}
+              y={ry - 8}
+              textAnchor="middle"
+              className="fill-blue-500"
+              stroke="none"
+              style={{ fontSize: 7 }}
+            >
+              {wLabel}
+            </text>
+            {/* Depth dim right of room */}
+            <line x1={rx + rw + 6} y1={ry} x2={rx + rw + 6} y2={ry + rd} />
+            <line x1={rx + rw + 3} y1={ry} x2={rx + rw + 9} y2={ry} />
+            <line x1={rx + rw + 3} y1={ry + rd} x2={rx + rw + 9} y2={ry + rd} />
+            <text
+              x={rx + rw + dimOff}
+              y={my}
+              textAnchor="middle"
+              className="fill-blue-500"
+              stroke="none"
+              transform={`rotate(-90 ${rx + rw + dimOff} ${my})`}
+              style={{ fontSize: 7 }}
+            >
+              {dLabel}
+            </text>
+          </g>
+        );
+      })}
+    </g>
+  );
+}
+
+// ── MEP overlay layer (Phase 29) ──────────────────────────────────────────────
+
+const MEP_COLORS: Record<MEPSystem, string> = {
+  plumbing:   "#1a6eb5",
+  electrical: "#d97706",
+  lighting:   "#ca8a04",
+  ac:         "#0891b2",
+};
+
+const MEP_SYMBOLS: Record<string, string> = {
+  wc:       "WC",
+  sink:     "S",
+  basin:    "B",
+  shower:   "SH",
+  switch:   "SW",
+  socket:   "SO",
+  ceiling:  "L",
+  ac_unit:  "AC",
+};
+
+function MepPoint({
+  pt,
+  selected,
+  onSelect,
+}: {
+  pt: ServicePoint;
+  selected: boolean;
+  onSelect?: (id: string) => void;
+}) {
+  const cx = pt.x * SCALE;
+  const cy = pt.y * SCALE;
+  const color = MEP_COLORS[pt.system] ?? "#888";
+  const r = pt.system === "ac" ? 5 : 4;
+  const sym = MEP_SYMBOLS[pt.kind] ?? pt.kind.slice(0, 2).toUpperCase();
+
+  return (
+    <g
+      className="cursor-pointer"
+      onClick={() => onSelect?.(pt.id)}
+    >
+      <circle
+        cx={cx}
+        cy={cy}
+        r={r + (selected ? 2 : 0)}
+        fill={color}
+        fillOpacity={0.85}
+        stroke={selected ? "#fff" : "none"}
+        strokeWidth={selected ? 1.5 : 0}
+      />
+      <text
+        x={cx}
+        y={cy}
+        textAnchor="middle"
+        dominantBaseline="central"
+        fill="#fff"
+        stroke="none"
+        style={{ fontSize: 5, fontWeight: 700, userSelect: "none" }}
+      >
+        {sym}
+      </text>
+      {pt.user_override && (
+        <circle cx={cx + r - 1} cy={cy - r + 1} r={1.5} fill="#f59e0b" />
+      )}
+    </g>
+  );
+}
+
+function MEPLayer({
+  project,
+  activeLayer,
+  selectedPointId,
+  onSelectPoint,
+  visibleRoomIds,
+}: {
+  project: ArchitectureProject;
+  activeLayer: Set<MEPSystem>;
+  selectedPointId?: string | null;
+  onSelectPoint?: (id: string) => void;
+  visibleRoomIds: Set<string>;
+}) {
+  if (!project.mep_plan.generated) return null;
+
+  const mep = project.mep_plan;
+  const allPoints: ServicePoint[] = [
+    ...(activeLayer.has("plumbing") ? mep.plumbing.points : []),
+    ...(activeLayer.has("electrical") ? mep.electrical.points : []),
+    ...(activeLayer.has("lighting") ? mep.lighting.points : []),
+    ...(activeLayer.has("ac") ? mep.ac.points : []),
+  ].filter((pt) => visibleRoomIds.has(pt.room_id));
+
+  const routes = [
+    ...(activeLayer.has("plumbing") ? mep.plumbing.routes : []),
+    ...(activeLayer.has("electrical") ? mep.electrical.routes : []),
+  ];
+
+  return (
+    <g>
+      {/* Advisory routes */}
+      {routes.map((rt) => {
+        if (rt.polyline.length < 2) return null;
+        const color = MEP_COLORS[rt.system] ?? "#888";
+        const pts = rt.polyline.map(([x, y]) => `${x * SCALE},${y * SCALE}`).join(" ");
+        return (
+          <polyline
+            key={rt.id}
+            points={pts}
+            fill="none"
+            stroke={color}
+            strokeWidth={0.7}
+            strokeDasharray="4 2"
+            opacity={0.5}
+          />
+        );
+      })}
+      {/* Service points */}
+      {allPoints.map((pt) => (
+        <MepPoint
+          key={pt.id}
+          pt={pt}
+          selected={pt.id === selectedPointId}
+          onSelect={onSelectPoint}
+        />
+      ))}
+    </g>
+  );
+}
+
 export function FloorPlanSvg({
   project,
   style,
   className,
   selectedRoomId = null,
   interactive = false,
+  activeLevel = 0,
+  showDimensions,
+  showFurniturePlan,
+  activeMepLayers,
+  selectedMepPointId,
+  onSelectMepPoint,
 }: {
   project: ArchitectureProject;
   style?: React.CSSProperties;
@@ -302,14 +848,28 @@ export function FloorPlanSvg({
   selectedRoomId?: string | null;
   /** Enables pointer affordances on rooms; click handling is delegated to the parent. */
   interactive?: boolean;
+  /** Active floor level for multi-floor plans (Phase 22). */
+  activeLevel?: number;
+  /** Override show_dimensions from project; undefined = use project.show_dimensions. */
+  showDimensions?: boolean;
+  /** Override furniture visibility; undefined = use project.show_furniture. */
+  showFurniturePlan?: boolean;
+  /** Which MEP systems to show as overlay (Phase 29). */
+  activeMepLayers?: Set<MEPSystem>;
+  selectedMepPointId?: string | null;
+  onSelectMepPoint?: (id: string) => void;
 }) {
   const { site } = project;
   const { width: vw, height: vh } = planPixelSize(project);
   const sw = site.width * SCALE;
   const sd = site.depth * SCALE;
   const unit = project.units === "feet" ? "ft" : "m";
-  const roomsById = new Map(project.rooms.map((r) => [r.id, r]));
+  const visibleRooms = project.rooms.filter((r) => r.level === activeLevel);
+  const visibleRoomIds = new Set(visibleRooms.map((r) => r.id));
+  const roomsById = new Map(visibleRooms.map((r) => [r.id, r]));
   const dimOffset = 26;
+  const dimsOn = showDimensions ?? project.show_dimensions ?? true;
+  const mepLayers = activeMepLayers ?? (project.show_mep ? new Set<MEPSystem>(["plumbing", "electrical", "lighting", "ac"]) : new Set<MEPSystem>());
 
   return (
     <svg
@@ -334,7 +894,7 @@ export function FloorPlanSvg({
 
         {/* rooms: fills + walls, then openings, then labels */}
         <g>
-          {project.rooms.map((room) => (
+          {visibleRooms.map((room) => (
             <RoomShape
               key={room.id}
               room={room}
@@ -344,24 +904,37 @@ export function FloorPlanSvg({
           ))}
         </g>
         <g>
-          {project.doors.map((door) => {
+          {project.doors.filter((d) => visibleRoomIds.has(d.room_id)).map((door) => {
             const room = roomsById.get(door.room_id);
             return room ? (
               <DoorSymbol key={door.id} door={door} room={room} />
             ) : null;
           })}
-          {project.windows.map((win) => {
+          {project.windows.filter((w) => visibleRoomIds.has(w.room_id)).map((win) => {
             const room = roomsById.get(win.room_id);
             return room ? (
               <WindowSymbol key={win.id} window={win} room={room} />
             ) : null;
           })}
         </g>
+        <FurnitureLayer project={project} visibleRoomIds={visibleRoomIds} show={showFurniturePlan} />
+        {/* MEP overlay (Phase 29) */}
+        {mepLayers.size > 0 && (
+          <MEPLayer
+            project={project}
+            activeLayer={mepLayers}
+            selectedPointId={selectedMepPointId}
+            onSelectPoint={onSelectMepPoint}
+            visibleRoomIds={visibleRoomIds}
+          />
+        )}
         <g>
-          {project.rooms.map((room) => (
+          {visibleRooms.map((room) => (
             <RoomLabel key={room.id} room={room} unit={unit} />
           ))}
         </g>
+        {/* Room-level dimension annotations (Phase 29.0) */}
+        {dimsOn && <RoomDimensionLines rooms={visibleRooms} />}
 
         {/* site dimensions */}
         <DimensionLine

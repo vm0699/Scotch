@@ -57,6 +57,41 @@ Scripts before plugins (zero-install value first), plugins read the same JSON th
 
 CADAM/adam.new-inspired premium white interface (see questionnaire heading 19). The signature interaction is in-screen parameter editing after generation: select on canvas, edit inline, see the plan update live.
 
+## Prompt-to-Production Direction (v1.1, Phases 28–42)
+
+After v1.0-beta (Phases 0–27 complete), the product direction extends from "text-to-design" to a
+**prompt-to-production architecture workflow system**: plain-English prompts produce editable
+*production* outputs — working-drawing dimensions (real-scale, metric-compatible), furniture/interior
+layout, MEP layers (plumbing/electrical/lighting/AC), detail drawings (toilet/kitchen/door-window/wall-
+section/tile), material/tile/BOQ/cost, and **Tamil Nadu** source-backed advisories above NBC — plus
+client-change management with affected-item tracking, and a 2D-first → render-ready 3D pipeline.
+
+**Module priorities (founder build order):** 29 MEP → 30 Details → 31 BOQ → 32 Tamil Nadu advisory →
+33 architect-twin personalization → 34 client-change mgmt → 35 2D-to-3D/render → 36 prompt-first
+toolchain → 37 cloud/auth → 38 external MCP → 39 scan-to-plan → 40 feasibility → 41 review/QA →
+42 release hardening (v1.1).
+
+**Invariants carried forward:** `ArchitectureProject` JSON is the single source of truth (new design/
+geometry data inline, workflow/account metadata in sidecars); every generate/edit/sync/export path runs
+the validator before persist; Pydantic ↔ TypeScript stay 1:1; deterministic generation always works
+with no AI key; conceptual outputs (MEP, details, advisories) carry `confidence`/`needs_review` (and
+`needs_professional_verification` for regulations); the v1.1 demo is fully runnable offline.
+
+**External dependencies:** nothing external is blocking — only the Tamil Nadu rule source material is a
+real external *content* dependency (handled via ingestion-ready placeholders + verification flags); AI
+and render-image keys are optional enhancers. Full analysis:
+[../architecture/external-services-and-data.md](../architecture/external-services-and-data.md).
+
+**Known limitations (v1.1 target):** MEP is conceptual/semi-working (not engineering-certified);
+details start schematic and improve toward construction-ready; BOQ uses manual rates (no live vendor
+pricing); TN advisories are advisory and require professional verification; scan-to-plan is upload +
+manual scale only (AI extraction is a documented roadmap); cloud/multi-user is prepared behind seams,
+not wired.
+
+See the full staged plan: [roadmap-phase-28-plus.md](roadmap-phase-28-plus.md) ·
+[phase-28-founder-requirements-map.md](phase-28-founder-requirements-map.md) ·
+[demo-script-v1.1.md](demo-script-v1.1.md).
+
 ## Assumptions
 
 - Single local user; no concurrency or auth until Phase 18.

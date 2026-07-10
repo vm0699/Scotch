@@ -1,0 +1,144 @@
+{
+  "id": "chg-ea7bf10c6d86",
+  "request_text": "add an attached toilet",
+  "source": "client",
+  "status": "pending",
+  "priority": "medium",
+  "created_at": "2026-06-23T06:23:55.016287Z",
+  "updated_at": "2026-06-23T06:23:55.031211Z",
+  "affected_modules": [
+    "details",
+    "rooms",
+    "compliance",
+    "mep",
+    "plugins",
+    "exports",
+    "boq"
+  ],
+  "before_version": null,
+  "after_version": null,
+  "summary": "Adding attached toilet — 7 actions needed across MEP, BOQ, and compliance.",
+  "cost_impact": "Est. +₹25,000–₹45,000 (WC, basin, tiles, waterproofing, plumbing)",
+  "drawing_impact": [],
+  "mep_impact": [],
+  "detail_impact": [],
+  "export_impact": [],
+  "affected_items": {
+    "change_id": "chg-ea7bf10c6d86",
+    "rooms": [
+      {
+        "module": "rooms",
+        "object_id": null,
+        "description": "New bathroom will be added to the floor plan",
+        "severity": "action_needed",
+        "action": "Regenerate floor plan with new room"
+      }
+    ],
+    "mep": [
+      {
+        "module": "mep",
+        "object_id": null,
+        "description": "Plumbing — drain and supply points needed for new WC + basin",
+        "severity": "action_needed",
+        "action": "Regenerate MEP plumbing layer"
+      },
+      {
+        "module": "mep",
+        "object_id": null,
+        "description": "Electrical — switch and light point needed in new bathroom",
+        "severity": "action_needed",
+        "action": "Regenerate MEP electrical layer"
+      }
+    ],
+    "boq": [
+      {
+        "module": "boq",
+        "object_id": null,
+        "description": "Plumbing fixtures — WC, basin (+₹15,000–₹25,000 est.)",
+        "severity": "action_needed",
+        "action": "Recalculate BOQ to include new fixtures"
+      },
+      {
+        "module": "boq",
+        "object_id": null,
+        "description": "Floor tiles — new bathroom area (~25–40 ft²)",
+        "severity": "action_needed",
+        "action": "Recalculate BOQ for tile quantities"
+      },
+      {
+        "module": "boq",
+        "object_id": null,
+        "description": "Waterproofing — new bathroom floor and walls",
+        "severity": "action_needed",
+        "action": "Add waterproofing BOQ line"
+      }
+    ],
+    "compliance": [
+      {
+        "module": "compliance",
+        "object_id": null,
+        "description": "Bathroom count will be 3 — verify NBC ventilation requirement (window ≥ 1/8 floor area)",
+        "severity": "warning",
+        "action": "Recheck compliance after room addition"
+      },
+      {
+        "module": "compliance",
+        "object_id": null,
+        "description": "Coverage currently 26.5% — new room may exceed NBC/CMDA limit",
+        "severity": "warning",
+        "action": "Recheck compliance after change"
+      }
+    ],
+    "details": [
+      {
+        "module": "details",
+        "object_id": null,
+        "description": "Toilet plan detail required for new bathroom",
+        "severity": "action_needed",
+        "action": "Generate toilet detail drawing"
+      }
+    ],
+    "exports": [
+      {
+        "module": "exports",
+        "object_id": null,
+        "description": "All drawing exports (DXF, SVG, PDF, IFC) are stale after design change",
+        "severity": "warning",
+        "action": "Re-export after change is applied"
+      },
+      {
+        "module": "exports",
+        "object_id": null,
+        "description": "3D exports (SketchUp .rb, Blender .py, GLTF) need re-generation",
+        "severity": "warning",
+        "action": "Re-export 3D model after change"
+      },
+      {
+        "module": "exports",
+        "object_id": null,
+        "description": "Presentation sheets (SVG/PDF) show outdated floor plan",
+        "severity": "warning",
+        "action": "Re-export presentation sheets"
+      }
+    ],
+    "plugins": [
+      {
+        "module": "plugins",
+        "object_id": null,
+        "description": "Revit model is out of sync — run Revit add-in sync to pull changes",
+        "severity": "warning",
+        "action": "Use Revit › Scotch › Sync › Pull"
+      },
+      {
+        "module": "plugins",
+        "object_id": null,
+        "description": "SketchUp model is out of sync — re-import updated .rb script",
+        "severity": "warning",
+        "action": "Download new SketchUp script and run in Ruby Console"
+      }
+    ],
+    "total_count": 14,
+    "summary": "Adding attached toilet — 7 actions needed across MEP, BOQ, and compliance.",
+    "cost_impact": "Est. +₹25,000–₹45,000 (WC, basin, tiles, waterproofing, plumbing)"
+  }
+}

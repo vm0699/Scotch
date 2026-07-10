@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
-import { RotateCcw, Box as BoxIcon, Camera } from "lucide-react";
+import { RotateCcw, Box as BoxIcon, Camera, Sun } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +30,88 @@ import type { ArchitectureProject, CameraSuggestion } from "@/features/project/t
 import { buildMassingData, type MaterialId } from "@/features/massing/massing-data";
 import { getCameras } from "@/features/api/client";
 
+// ── Stage 27.7 — solar utilities ─────────────────────────────────────────────
+
+const _DEG = Math.PI / 180;
+const _MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function _solarPos(hour: number, month: number, latDeg = 20) {
+  const lat = latDeg * _DEG;
+  const doy = (month - 1) * 30.4 + 15;
+  const dec = 23.45 * Math.sin((2 * Math.PI / 365) * (doy - 81)) * _DEG;
+  const H   = (hour - 12) * 15 * _DEG;
+  const sinAlt = Math.sin(lat) * Math.sin(dec) + Math.cos(lat) * Math.cos(dec) * Math.cos(H);
+  const altitude = Math.asin(Math.max(-0.1, Math.min(1, sinAlt)));
+  if (altitude <= 0) return null;
+  const cosAlt = Math.cos(altitude);
+  const cosAzClamp = cosAlt > 1e-4
+    ? Math.max(-1, Math.min(1, (Math.sin(dec) - Math.sin(lat) * sinAlt) / (Math.cos(lat) * cosAlt)))
+    : 0;
+  const azFromSouth = hour < 12 ? -Math.acos(cosAzClamp) : Math.acos(cosAzClamp);
+  return { altitude, azFromSouth };
+}
+
+function _fmtHour(h: number): string {
+  const hh   = Math.floor(h);
+  const mm   = Math.round((h - hh) * 60);
+  const ampm = hh < 12 ? "AM" : "PM";
+  const h12  = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh;
+  return `${h12}:${mm.toString().padStart(2, "0")} ${ampm}`;
+}
+
+// ── Sun light (directional, positional, shadow-capable) ───────────────────────
+
+function SunLight({
+  sunHour, sunMonth, enableShadows, centerX, centerZ,
+}: {
+  sunHour: number; sunMonth: number; enableShadows: boolean;
+  centerX: number; centerZ: number;
+}) {
+  const sol = _solarPos(sunHour, sunMonth);
+  if (!sol) return null; // below horizon
+  const D = 120;
+  const lx = centerX + Math.sin(sol.azFromSouth) * Math.cos(sol.altitude) * D;
+  const ly = Math.max(5, Math.sin(sol.altitude) * D);
+  const lz = centerZ - Math.cos(sol.azFromSouth) * Math.cos(sol.altitude) * D;
+  return (
+    <directionalLight
+      position={[lx, ly, lz]}
+      intensity={0.95}
+      castShadow={enableShadows}
+      shadow-mapSize-width={1024}
+      shadow-mapSize-height={1024}
+      shadow-camera-near={1}
+      shadow-camera-far={D * 3}
+      shadow-camera-left={-D * 1.5}
+      shadow-camera-right={D * 1.5}
+      shadow-camera-top={D * 1.5}
+      shadow-camera-bottom={-D * 1.5}
+    />
+  );
+}
+
+// ── Ground shadow receiver ─────────────────────────────────────────────────────
+
+function GroundPlane({ centerX, centerZ, maxDim, enableShadows }: {
+  centerX: number; centerZ: number; maxDim: number; enableShadows: boolean;
+}) {
+  if (!enableShadows) return null;
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[centerX, -0.02, centerZ]} receiveShadow>
+      <planeGeometry args={[maxDim * 6, maxDim * 6]} />
+      <shadowMaterial opacity={0.18} />
+    </mesh>
+  );
+}
+
+// ── Re-render trigger when sun params change (demand frameloop) ───────────────
+
+function _Invalidator({ deps }: { deps: unknown[] }) {
+  const { invalidate } = useThree();
+  useEffect(() => { invalidate(); }, deps); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
+}
+
 // ── Stage 8.4 — material palette ─────────────────────────────────────────────
 
 type MatDef = {
@@ -40,16 +122,25 @@ type MatDef = {
 };
 
 const MAT: Record<MaterialId, MatDef> = {
-  wall:   { color: "#f8f7f5", opacity: 1,    metalness: 0,    roughness: 0.65 },
-  floor:  { color: "#e8e3dc", opacity: 1,    metalness: 0,    roughness: 0.9  },
-  roof:   { color: "#d4cec6", opacity: 1,    metalness: 0,    roughness: 0.8  },
-  glass:  { color: "#a8cadf", opacity: 0.42, metalness: 0.15, roughness: 0.05 },
-  ground: { color: "#ede9e2", opacity: 1,    metalness: 0,    roughness: 1    },
+  wall:             { color: "#f8f7f5", opacity: 1,    metalness: 0,    roughness: 0.65 },
+  floor:            { color: "#e8e3dc", opacity: 1,    metalness: 0,    roughness: 0.9  },
+  roof:             { color: "#d4cec6", opacity: 1,    metalness: 0,    roughness: 0.8  },
+  glass:            { color: "#a8cadf", opacity: 0.42, metalness: 0.15, roughness: 0.05 },
+  ground:           { color: "#ede9e2", opacity: 1,    metalness: 0,    roughness: 1    },
+  furniture:        { color: "#c4b89a", opacity: 1,    metalness: 0,    roughness: 0.75 },
+  // Phase 35 — floor tile materials
+  floor_tile_light: { color: "#f0ece4", opacity: 1,    metalness: 0,    roughness: 0.55 },
+  floor_tile_dark:  { color: "#8c7e6c", opacity: 1,    metalness: 0,    roughness: 0.60 },
+  floor_marble:     { color: "#f5f2ee", opacity: 1,    metalness: 0.04, roughness: 0.25 },
+  // Phase 35 — architectural elements
+  counter:          { color: "#a89880", opacity: 1,    metalness: 0.05, roughness: 0.55 },
+  mep_block:        { color: "#b8ccd6", opacity: 0.88, metalness: 0.08, roughness: 0.45 },
+  stair:            { color: "#d4cfc8", opacity: 1,    metalness: 0,    roughness: 0.75 },
 };
 
 // ── Scene internals ───────────────────────────────────────────────────────────
 
-function MassingMesh({ project }: { project: ArchitectureProject }) {
+function MassingMesh({ project, enableShadows }: { project: ArchitectureProject; enableShadows: boolean }) {
   const data = useMemo(() => buildMassingData(project), [project]);
 
   const { camera } = useThree();
@@ -69,7 +160,13 @@ function MassingMesh({ project }: { project: ArchitectureProject }) {
         const m = MAT[box.mat];
         const transparent = m.opacity < 1;
         return (
-          <mesh key={box.id} name={box.name} position={box.pos}>
+          <mesh
+            key={box.id}
+            name={box.name}
+            position={box.pos}
+            castShadow={enableShadows}
+            receiveShadow={enableShadows}
+          >
             <boxGeometry args={box.size} />
             <meshStandardMaterial
               color={m.color}
@@ -84,6 +181,17 @@ function MassingMesh({ project }: { project: ArchitectureProject }) {
       })}
     </>
   );
+}
+
+/** Exposes `gl.domElement.toDataURL()` so the render tab can capture the canvas. */
+function CanvasCapture({ onReady }: { onReady: (fn: () => string) => void }) {
+  const { gl } = useThree();
+  const glRef = useRef(gl);
+  glRef.current = gl;
+  useEffect(() => {
+    onReady(() => glRef.current.domElement.toDataURL("image/png"));
+  }, [onReady]);
+  return null;
 }
 
 /** Wires scene reference for GLTF export (Stage 8.6). */
@@ -150,16 +258,24 @@ function CameraController({ jumpTo }: { jumpTo: CameraSuggestion | null }) {
 export function MassingViewer({
   project,
   projectId,
+  onCaptureReady,
 }: {
   project: ArchitectureProject;
   /** Optional: supply to enable camera preset loading from the API. */
   projectId?: string;
+  /** Called with a fn that captures the WebGL canvas as a base64 PNG data URL. */
+  onCaptureReady?: (fn: () => string) => void;
 }) {
   const controlsRef = useRef<any>(null);
   const exportFnRef = useRef<(() => void) | null>(null);
   const [cameras, setCameras] = useState<CameraSuggestion[]>([]);
   const [activeCamera, setActiveCamera] = useState<CameraSuggestion | null>(null);
   const [showCamMenu, setShowCamMenu] = useState(false);
+  // Stage 27.7 — sun / shadow state
+  const [sunHour, setSunHour] = useState(10);
+  const [sunMonth, setSunMonth] = useState(6);
+  const [showShadows, setShowShadows] = useState(false);
+  const [showSunPanel, setShowSunPanel] = useState(false);
 
   const data = useMemo(() => buildMassingData(project), [project]);
 
@@ -176,6 +292,13 @@ export function MassingViewer({
   const handleExportReady = useCallback((fn: () => void) => {
     exportFnRef.current = fn;
   }, []);
+
+  const handleCaptureReady = useCallback(
+    (fn: () => string) => {
+      onCaptureReady?.(fn);
+    },
+    [onCaptureReady],
+  );
 
   const resetCamera = useCallback(() => {
     setActiveCamera(null);
@@ -196,24 +319,45 @@ export function MassingViewer({
     <div className="relative h-full w-full">
       <Canvas
         frameloop="demand"
-        gl={{ antialias: true, alpha: false }}
+        shadows
+        gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
         camera={{ fov: 42, near: 0.1, far: 2000 }}
         style={{ background: "#f5f4f1" }}
       >
-        {/* Lighting */}
-        <ambientLight intensity={0.65} />
-        <directionalLight
-          position={[data.centerX + 20, 30, data.centerZ - 10]}
-          intensity={0.85}
-          castShadow={false}
-        />
+        {/* Ambient + fill lights (always on) */}
+        <ambientLight intensity={showShadows ? 0.45 : 0.65} />
         <directionalLight
           position={[data.centerX - 15, 20, data.centerZ + 20]}
-          intensity={0.25}
+          intensity={showShadows ? 0.18 : 0.25}
+        />
+        {/* Sun light — Stage 27.7 (replaces original key light when sun panel active) */}
+        {showSunPanel ? (
+          <SunLight
+            sunHour={sunHour}
+            sunMonth={sunMonth}
+            enableShadows={showShadows}
+            centerX={data.centerX}
+            centerZ={data.centerZ}
+          />
+        ) : (
+          <directionalLight
+            position={[data.centerX + 20, 30, data.centerZ - 10]}
+            intensity={0.85}
+          />
+        )}
+        {/* Ground plane shadow receiver */}
+        <GroundPlane
+          centerX={data.centerX}
+          centerZ={data.centerZ}
+          maxDim={data.maxDim}
+          enableShadows={showShadows}
         />
 
         {/* Geometry — Stage 8.3 walls + slabs from massing-data */}
-        <MassingMesh project={project} />
+        <MassingMesh project={project} enableShadows={showShadows} />
+
+        {/* Invalidate on sun param changes */}
+        <_Invalidator deps={[sunHour, sunMonth, showShadows, showSunPanel]} />
 
         {/* OrbitControls — Stage 8.2 */}
         <OrbitControls
@@ -231,7 +375,54 @@ export function MassingViewer({
 
         {/* Camera jump controller — Stage 17.3 */}
         <CameraController jumpTo={activeCamera} />
+
+        {/* Canvas capture hook — Stage 23.2 */}
+        {onCaptureReady && <CanvasCapture onReady={handleCaptureReady} />}
       </Canvas>
+
+      {/* Stage 27.7 — Sun / shadow panel */}
+      {showSunPanel && (
+        <div className="absolute bottom-14 right-3 z-40 w-56 rounded-lg border border-border/70 bg-card/97 p-3 shadow-md backdrop-blur-sm">
+          <div className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
+            Sun Context — Lat 20°N (India)
+          </div>
+          <div className="space-y-3">
+            <div>
+              <div className="mb-0.5 flex justify-between text-[10px] text-muted-foreground">
+                <span>Time of day</span>
+                <span className="font-mono">{_fmtHour(sunHour)}</span>
+              </div>
+              <input
+                type="range" min={4} max={20} step={0.25} value={sunHour}
+                onChange={(e) => setSunHour(Number(e.target.value))}
+                className="w-full accent-foreground"
+              />
+            </div>
+            <div>
+              <div className="mb-0.5 flex justify-between text-[10px] text-muted-foreground">
+                <span>Month</span>
+                <span className="font-mono">{_MONTHS[sunMonth - 1]}</span>
+              </div>
+              <input
+                type="range" min={1} max={12} step={1} value={sunMonth}
+                onChange={(e) => setSunMonth(Number(e.target.value))}
+                className="w-full accent-foreground"
+              />
+            </div>
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox" checked={showShadows}
+                onChange={(e) => setShowShadows(e.target.checked)}
+                className="size-3 accent-foreground"
+              />
+              <span className="text-[10px] text-muted-foreground">Cast shadows</span>
+            </label>
+            {_solarPos(sunHour, sunMonth) === null && (
+              <p className="text-[10px] text-muted-foreground/50 italic">Sun below horizon at this time.</p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Overlay controls */}
       <div className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg border border-border/70 bg-card/90 p-0.5 shadow-[0_1px_3px_rgba(0,0,0,0.08)] backdrop-blur-sm">
@@ -292,6 +483,25 @@ export function MassingViewer({
             </div>
           </>
         )}
+
+        <div className="mx-0.5 h-4 w-px bg-border/60" />
+
+        {/* Stage 27.7 — Sun / shadow toggle */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setShowSunPanel((v) => !v)}
+              aria-label="Sun context"
+              aria-pressed={showSunPanel}
+              className={showSunPanel ? "bg-muted" : undefined}
+            >
+              <Sun className="size-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top">Sun / shadow context</TooltipContent>
+        </Tooltip>
 
         <div className="mx-0.5 h-4 w-px bg-border/60" />
 

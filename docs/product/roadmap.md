@@ -269,7 +269,68 @@ Files created: `services/api/app/api/routes/versions.py`, `services/api/tests/te
 Files modified: `models/project.py`, `models/__init__.py`, `storage/base.py`, `storage/__init__.py`, `storage/local_store.py`, `storage/cloud_store.py`, `routes/projects.py`, `main.py`, `types.ts`, `client.ts`, `data-panel.tsx`, `workspace.tsx`
 **Accept:** history records, displays, restores, diffs. 29 new pytest cases.
 
-## Phase 20 — Product Completion & QA MVP — ⬜
+## Phase 20 — Product Completion & QA MVP — ✅ Done
 
-Stages: 20.1 full end-to-end QA · 20.2 error handling (API errors, toasts, loading/empty states) · 20.3 performance (SVG/3D/generation/loading/exports) · 20.4 UI final polish · 20.5 final documentation (overview, setup, architecture, data model, API, exports, integrations, roadmap, limitations) · 20.6 demo script (open → new project → 2BHK prompt → generate → edit dims → regenerate → 3D → export SVG/JSON → integration roadmap).
-**Accept:** product runs end-to-end, presentable, documented, demo works.
+| Stage | Description | Status |
+|-------|-------------|--------|
+| 20.1 | Full end-to-end QA — `docs/product/qa-checklist.md`; all 13 flow sections verified; known limitations documented | ✅ |
+| 20.2 | Error handling — `sonner` toast system wired via root layout `<Toaster>`; generate/edit/options/restore/rename errors surface as toasts; export download confirmation + failure toast; silent export error fixed | ✅ |
+| 20.3 | Performance — `useMemo` on room selection lookup in DataPanel; removed redundant state (`lastExport`); dynamic 3D import already in place (`next/dynamic ssr:false`) | ✅ |
+| 20.4 | UI polish — sidebar version `"Scotch 1.0 beta · local"`; `History` icon unused import cleaned up; consistent empty/loading skeletons across all sections | ✅ |
+| 20.5 | Final documentation — complete README rewrite covering all 20 phases, full API reference, storage, generation, integrations, known limitations; `docs/README.md` updated with all-phases status table | ✅ |
+| 20.6 | Demo script — `docs/product/demo-script.md`; 8-minute timed walkthrough: create → generate → CADAM edit → 3D → exports → intelligence → history; fallback notes for offline/WebGL failure | ✅ |
+
+Files created: `docs/product/qa-checklist.md`, `docs/product/demo-script.md`
+Files modified: `README.md`, `docs/README.md`, `roadmap.md`, `layout.tsx`, `workspace.tsx`, `data-panel.tsx`, `dashboard/page.tsx`
+**Accept:** product runs end-to-end, presentable, documented, demo works. 384 tests passing, TypeScript clean. v1.0-beta.
+
+---
+
+## Phases 21–27 — Post-MVP Wedge Roadmap ⬜
+
+See full staged breakdown: **[docs/product/roadmap-phase-21-27.md](roadmap-phase-21-27.md)**
+
+| Phase | Theme | Pillar | Status |
+|-------|-------|--------|--------|
+| 21 | Program→Model spine (Snaptrude-style live program grid unified with editable parameters) | North-star foundation | ✅ |
+| 22 | IFC export + multi-floor | Catch-up (BIM) | ⬜ |
+| 23 | In-app AI rendering | Catch-up (visual) | ⬜ |
+| 24 | In-app agentic chat + MCP-native model | **Wedge pillar 1** | ⬜ |
+| 25 | SketchUp round-trip + MCP bridge (flagship) | **Wedge pillar 2** | ⬜ |
+| 26 | Furniture / interior layout | Catch-up (secondary) | ⬜ |
+| 27 | India compliance + Revit/Rhino round-trip + site/sun | Enhancement / expansion | ⬜ |
+
+**Wedge:** Scotch is the agent-addressable, interoperable schematic layer ON TOP of the architect's toolchain. The `ArchitectureProject` model is the product; SketchUp, Revit, Rhino, and the web UI are clients of it. Primary segments: small firms/studios + students. Flagship host: SketchUp. Headline agentic surface: in-app chat. North-star UX: Snaptrude program→model unified with our editable parameters.
+
+---
+
+## Phases 28–42 — Prompt-to-Production Roadmap ⬜
+
+See full staged breakdown: **[docs/product/roadmap-phase-28-plus.md](roadmap-phase-28-plus.md)**
+· requirement traceability: **[phase-28-founder-requirements-map.md](phase-28-founder-requirements-map.md)**
+· external dependencies: **[../architecture/external-services-and-data.md](../architecture/external-services-and-data.md)**
+· v1.1 demo: **[demo-script-v1.1.md](demo-script-v1.1.md)**
+
+| Phase | Theme | Bucket | Status |
+|-------|-------|--------|--------|
+| 28 | Planning restructure (founder-requirement map, roadmap, spec/demo/services docs) | Planning | ✅ |
+| 29 | MEP Production Layer Studio (plumbing/electrical/lighting/AC editable 2D layers) + dimension/units/stairs groundwork | Production core | ✅ |
+| 30 | Detail Drawing KB + Generator (toilet/kitchen/door-window/wall-section/MEP/tile) | Production core | ✅ |
+| 31 | Material / Tile / BOQ / Cost engine (editable manual rates) | Production core | ✅ |
+| 32 | Tamil Nadu advisory rule pack (source-backed, above NBC) | Regional moat | ✅ |
+| 33 | Architect-twin personalization (client brief + user profile + reasoning) | Differentiation | ✅ |
+| 34 | Client change mgmt + affected-item engine | Workflow | ✅ |
+| 35 | 2D-to-3D production + render-ready pipeline | Visual | ✅ |
+| 36 | Prompt-first toolchain completion | Wedge | ✅ |
+| 37 | Cloud/auth prep for twin memory | Infra | ✅ |
+| 38 | External MCP + software control expansion | Wedge/interop | ✅ |
+| 39 | Reference / scan-to-plan ingestion | Expansion | ✅ |
+| 40 | Feasibility / yield (TestFit-lite) | Expansion | ✅ |
+| 41 | Collaboration / review / QA | Studio workflow | ✅ |
+| 42 | Release hardening + pilot package (v1.1) | Release | ✅ |
+
+**Direction:** *prompt-to-production* — type plain English, get editable working-drawing outputs
+(real-scale dimensions, furniture, MEP, details, BOQ, Tamil Nadu advisories), manage client changes with
+affected-item tracking, and push 2D-first work into render-ready 3D and professional tools.
+`ArchitectureProject` JSON remains the single source of truth; deterministic generation always works
+without an AI key. Build order honors the founder's sequence (29 MEP first).

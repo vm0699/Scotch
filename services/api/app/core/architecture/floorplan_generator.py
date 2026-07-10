@@ -17,6 +17,7 @@ never silently fixed.
 from dataclasses import dataclass, field
 
 from app.core.architecture.defaults import DEFAULT_FLOOR_HEIGHT, default_size
+from app.core.architecture.furniture_placer import place_all_furniture
 from app.core.architecture.materials import assign_default_materials
 from app.core.architecture.requirement_parser import DesignRequirements
 from app.core.models import (
@@ -33,6 +34,8 @@ from app.core.models import (
 
 MIN_ROOM_DIM = 4.0
 GAP = 0.0  # rooms share walls; poché rendering handles the joint
+_STAIR_W = 8.0
+_STAIR_D = 8.0
 
 
 @dataclass
@@ -52,6 +55,17 @@ class _GenState:
 
     def warn(self, wid: str, message: str, severity: str = "warning") -> None:
         self.warnings.append(ProjectWarning(id=wid, severity=severity, message=message))
+
+
+def _stair_spec(level_index: int) -> _Spec:
+    label = "G" if level_index == 0 else str(level_index)
+    return _Spec(
+        id=f"stair-{label.lower()}",
+        name="Staircase",
+        type="stair",
+        width=_STAIR_W,
+        depth=_STAIR_D,
+    )
 
 
 def _spec(room_id: str, name: str, room_type: str, size_key: str) -> _Spec:
@@ -135,7 +149,8 @@ def _office_fallback_program(req: DesignRequirements, state: _GenState) -> list[
 
 
 def _pack_bands(
-    bands: list[list[_Spec]], site_width: float, site_depth: float, state: _GenState
+    bands: list[list[_Spec]], site_width: float, site_depth: float, state: _GenState,
+    level: int = 0,
 ) -> list[Room]:
     """Place specs left-to-right per band, wrapping when width runs out."""
     placed: list[Room] = []
@@ -185,7 +200,7 @@ def _pack_bands(
                     y=round(y, 1),
                     width=round(spec.width, 1),
                     depth=min(depth, round(row_depth, 1)),
-                    level=0,
+                    level=level,
                 )
             )
             x += spec.width + GAP
@@ -257,6 +272,74 @@ def _openings(
     return doors, windows
 
 
+def _multi_floor_bands(
+    req: DesignRequirements, state: _GenState
+) -> list[tuple[int, list[list[_Spec]]]]:
+    """Return (level_index, bands) pairs for multi-floor residential buildings.
+
+    Ground floor: public + service zones + stair core.
+    Upper floors: private zone (bedrooms/baths) distributed evenly + stair core.
+    """
+    front: list[_Spec] = []
+    if req.parking:
+        front.append(_spec("parking", "Parking", "parking", "parking"))
+    if req.building_kind == "studio":
+        front.append(_spec("studio", "Studio", "living", "studio_room"))
+    else:
+        front.append(_spec("living", "Living Room", "living", "living"))
+    if req.balcony:
+        front.append(_spec("balcony", "Balcony", "balcony", "balcony"))
+
+    service: list[_Spec] = []
+    service.append(
+        _spec(
+            "kitchen",
+            "Kitchenette" if req.building_kind == "studio" else "Kitchen",
+            "kitchen",
+            "kitchenette" if req.building_kind == "studio" else "kitchen",
+        )
+    )
+    if req.dining:
+        service.append(_spec("dining", "Dining", "dining", "dining"))
+    baths_left = req.bathrooms
+    if baths_left > 0:
+        service.append(_spec("bath-1", "Common Bath", "bathroom", "bathroom"))
+        baths_left -= 1
+    if req.study:
+        service.append(_spec("study", "Study", "study", "study"))
+    if req.storage:
+        service.append(_spec("storage", "Storage", "storage", "storage"))
+
+    private: list[_Spec] = []
+    for i in range(req.bedrooms):
+        if i == 0:
+            private.append(_spec("bed-master", "Master Bedroom", "bedroom", "master_bedroom"))
+        else:
+            private.append(_spec(f"bed-{i + 1}", f"Bedroom {i + 1}", "bedroom", "bedroom"))
+        if baths_left > 0:
+            bath_id = f"bath-{req.bathrooms - baths_left + 1}"
+            label = "Attached Bath" if i == 0 else f"Bath {req.bathrooms - baths_left + 1}"
+            private.append(_spec(bath_id, label, "bathroom", "bathroom"))
+            baths_left -= 1
+
+    n_upper = req.floors - 1
+    ground_bands = [b for b in [front, service] if b]
+    ground_bands = ground_bands + [[_stair_spec(0)]]
+    result: list[tuple[int, list[list[_Spec]]]] = [(0, ground_bands)]
+
+    if private and n_upper > 0:
+        chunk = max(1, (len(private) + n_upper - 1) // n_upper)
+        for floor_idx in range(1, req.floors):
+            slice_start = (floor_idx - 1) * chunk
+            slice_end = min(slice_start + chunk, len(private))
+            floor_private = private[slice_start:slice_end]
+            if not floor_private:
+                break
+            result.append((floor_idx, [floor_private, [_stair_spec(floor_idx)]]))
+
+    return result
+
+
 _KIND_LABELS = {
     "apartment": "Apartment",
     "villa": "Villa",
@@ -278,6 +361,22 @@ def generate_floorplan(req: DesignRequirements) -> tuple[ArchitectureProject, st
     """Generate a validated-shape project plus a human summary."""
     state = _GenState()
 
+    # ── Setback inset (Phase 27.2) ─────────────────────────────────────────────
+    # Rooms are packed into the usable envelope inside the setbacks.
+    # Setback values default to NBC urban residential (front 9.84 ft, side 4.92 ft, rear 9.84 ft).
+    usable_w = max(MIN_ROOM_DIM, req.site_width - 2 * req.side_setback)
+    usable_d = max(MIN_ROOM_DIM, req.site_depth - req.front_setback - req.rear_setback)
+    x_offset = req.side_setback
+    y_offset  = req.front_setback
+
+    if usable_w < req.site_width - 1e-3 or usable_d < req.site_depth - 1e-3:
+        state.warn(
+            "warn-setback-applied",
+            f"Setbacks applied: front {req.front_setback:g} ft, sides {req.side_setback:g} ft, "
+            f"rear {req.rear_setback:g} ft → usable envelope {usable_w:g} × {usable_d:g} ft.",
+            severity="info",
+        )
+
     if req.building_kind == "cafe":
         bands = _cafe_program(req, state)
         building_type = "commercial"
@@ -288,15 +387,52 @@ def generate_floorplan(req: DesignRequirements) -> tuple[ArchitectureProject, st
         bands = _residential_program(req, state)
         building_type = "residential"
 
-    if req.size_modifier != 1.0:
-        m = req.size_modifier
-        for band in bands:
-            for spec in band:
-                spec.width = max(MIN_ROOM_DIM, round(spec.width * m, 1))
-                spec.depth = max(MIN_ROOM_DIM, round(spec.depth * m, 1))
+    if req.floors > 1 and building_type == "residential":
+        level_bands_list = _multi_floor_bands(req, state)
+        if req.size_modifier != 1.0:
+            m = req.size_modifier
+            for _, bands_for_level in level_bands_list:
+                for band in bands_for_level:
+                    for spec in band:
+                        if spec.type != "stair":
+                            spec.width = max(MIN_ROOM_DIM, round(spec.width * m, 1))
+                            spec.depth = max(MIN_ROOM_DIM, round(spec.depth * m, 1))
+        rooms = []
+        doors = []
+        windows = []
+        for level_idx, bands_for_level in level_bands_list:
+            level_rooms = _pack_bands(bands_for_level, usable_w, usable_d, state, level=level_idx)
+            # Shift rooms into the setback-inset position
+            for r in level_rooms:
+                r.x = round(r.x + x_offset, 2)
+                r.y = round(r.y + y_offset, 2)
+            rooms.extend(level_rooms)
+            d, w = _openings(level_rooms, req.site_width, state)
+            doors.extend(d)
+            windows.extend(w)
+    else:
+        if req.size_modifier != 1.0:
+            m = req.size_modifier
+            for band in bands:
+                for spec in band:
+                    spec.width = max(MIN_ROOM_DIM, round(spec.width * m, 1))
+                    spec.depth = max(MIN_ROOM_DIM, round(spec.depth * m, 1))
+        rooms = _pack_bands(bands, usable_w, usable_d, state)
+        for r in rooms:
+            r.x = round(r.x + x_offset, 2)
+            r.y = round(r.y + y_offset, 2)
+        doors, windows = _openings(rooms, req.site_width, state)
 
-    rooms = _pack_bands(bands, req.site_width, req.site_depth, state)
-    doors, windows = _openings(rooms, req.site_width, state)
+    # ── FSI guard (Phase 27.2) ────────────────────────────────────────────────
+    site_area = req.site_width * req.site_depth
+    built_up  = sum(r.width * r.depth for r in rooms if r.type not in ("parking", "balcony"))
+    actual_fsi = built_up / site_area if site_area > 0 else 0.0
+    if actual_fsi > req.max_fsi + 1e-4:
+        state.warn(
+            "warn-fsi-exceeded",
+            f"FSI {actual_fsi:.2f} exceeds allowed {req.max_fsi} for this zone. "
+            f"Reduce built-up area by ≈ {built_up - req.max_fsi * site_area:.0f} ft² or increase site.",
+        )
 
     for assumption in req.assumptions:
         state.warnings.insert(
@@ -307,6 +443,15 @@ def generate_floorplan(req: DesignRequirements) -> tuple[ArchitectureProject, st
                 message=assumption,
             ),
         )
+
+    levels = [
+        Level(
+            index=i,
+            name="Ground Floor" if i == 0 else f"Floor {i}",
+            elevation=round(i * DEFAULT_FLOOR_HEIGHT, 1),
+        )
+        for i in range(req.floors)
+    ]
 
     project = ArchitectureProject(
         id="generated",  # storage assigns the durable id
@@ -319,7 +464,7 @@ def generate_floorplan(req: DesignRequirements) -> tuple[ArchitectureProject, st
             floors=req.floors,
             floor_height=DEFAULT_FLOOR_HEIGHT,
         ),
-        levels=[Level(index=0, name="Ground Floor", elevation=0)],
+        levels=levels,
         rooms=rooms,
         doors=doors,
         windows=windows,
@@ -336,6 +481,12 @@ def generate_floorplan(req: DesignRequirements) -> tuple[ArchitectureProject, st
     )
 
     project = assign_default_materials(project)
+    project = place_all_furniture(project)
+
+    # Auto-derive dimension annotations and stair entities (Phase 29.0)
+    from app.core.architecture.dimension_engine import AutoDimensionEngine
+    project.dimensions = AutoDimensionEngine.derive(project)
+    project.stairs = AutoDimensionEngine.derive_stair_entities(project)
 
     built = sum(r.width * r.depth for r in rooms)
     summary = (

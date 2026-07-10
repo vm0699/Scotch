@@ -55,19 +55,61 @@ namespace ScotchRevit.Services
             }
         }
 
-        // ── Project sync ──────────────────────────────────────────────────────
+        // ── Phase 25 sync protocol ────────────────────────────────────────────
 
         /// <summary>
-        /// PATCH /projects/{projectId} → sends partial or full project JSON.
-        /// Returns true on 200 OK, false otherwise.
+        /// GET /projects/{projectId}/sync → SyncContractDto.
+        /// Returns the current canonical room list from Scotch.
+        /// Returns null on failure.
         /// </summary>
+        public SyncContractDto? PullSync(string projectId)
+        {
+            try
+            {
+                string url = $"{_baseUrl}/projects/{projectId}/sync";
+                using var response = _http.GetAsync(url).GetAwaiter().GetResult();
+                if (!response.IsSuccessStatusCode) return null;
+                string body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                return JsonSerializer.Deserialize<SyncContractDto>(body, _opts);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// POST /projects/{projectId}/sync → SyncPushResponseDto.
+        /// Sends Revit room data to Scotch using the Phase 25 sync protocol.
+        /// Returns null on failure.
+        /// </summary>
+        public SyncPushResponseDto? PushSync(string projectId, SyncPayloadDto payload)
+        {
+            try
+            {
+                string json = JsonSerializer.Serialize(payload, _opts);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                string url = $"{_baseUrl}/projects/{projectId}/sync";
+                using var response = _http.PostAsync(url, content).GetAwaiter().GetResult();
+                if (!response.IsSuccessStatusCode) return null;
+                string body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                return JsonSerializer.Deserialize<SyncPushResponseDto>(body, _opts);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        // ── Legacy PATCH (kept for ImportCommand backward compat) ─────────────
+
+        /// <summary>PATCH /projects/{projectId} — legacy; use PushSync for round-trip.</summary>
         public bool PatchProject(string projectId, object patchPayload)
         {
             try
             {
                 string json = JsonSerializer.Serialize(patchPayload, _opts);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
-
                 string url = $"{_baseUrl}/projects/{projectId}";
                 using var response = _http.PatchAsync(url, content).GetAwaiter().GetResult();
                 return response.IsSuccessStatusCode;
