@@ -14,19 +14,12 @@ Requires: ifcopenshell 0.8+
 from __future__ import annotations
 
 from pathlib import Path
-
-import ifcopenshell
-import ifcopenshell.api
-import ifcopenshell.api.aggregate
-import ifcopenshell.api.context
-import ifcopenshell.api.geometry
-import ifcopenshell.api.owner
-import ifcopenshell.api.project
-import ifcopenshell.api.root
-import ifcopenshell.api.spatial
-import ifcopenshell.api.unit
+from typing import TYPE_CHECKING
 
 from app.core.models import ArchitectureProject
+
+if TYPE_CHECKING:
+    import ifcopenshell
 
 FT_TO_M = 0.3048
 
@@ -37,6 +30,23 @@ def _m(ft: float) -> float:
 
 def export_ifc(project: ArchitectureProject, path: Path) -> None:
     """Write an IFC4 file from an ArchitectureProject."""
+    try:
+        import ifcopenshell
+        import ifcopenshell.api
+        import ifcopenshell.api.aggregate
+        import ifcopenshell.api.context
+        import ifcopenshell.api.geometry
+        import ifcopenshell.api.owner
+        import ifcopenshell.api.project
+        import ifcopenshell.api.root
+        import ifcopenshell.api.spatial
+        import ifcopenshell.api.unit
+    except ImportError as exc:
+        raise RuntimeError(
+            "IFC export requires the 'ifcopenshell' package, which is not installed "
+            "in this environment."
+        ) from exc
+
     ifc = ifcopenshell.api.run("project.create_file", version="IFC4")
 
     # ── Spatial hierarchy — Project must come before unit assignment ───────────
