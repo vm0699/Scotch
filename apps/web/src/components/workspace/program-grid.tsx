@@ -17,15 +17,25 @@ import { cn } from "@/lib/utils";
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const ROOM_TYPES = [
+  // "Bedroom" auto-becomes "Master Bedroom" for the first one added to a
+  // project (regenerate.py's _default_room_name) — there's no separate
+  // "master_bedroom" room type, so it isn't a distinct dropdown entry.
   { value: "bedroom", label: "Bedroom" },
   { value: "bathroom", label: "Bathroom" },
+  { value: "restroom", label: "Restroom" },
   { value: "living", label: "Living Room" },
+  { value: "seating", label: "Seating Area" },
   { value: "kitchen", label: "Kitchen" },
+  { value: "kitchenette", label: "Kitchenette" },
   { value: "dining", label: "Dining" },
   { value: "study", label: "Study" },
+  { value: "foyer", label: "Foyer" },
   { value: "storage", label: "Storage" },
   { value: "balcony", label: "Balcony" },
   { value: "parking", label: "Parking" },
+  { value: "office", label: "Office / Workspace" },
+  { value: "cafe_seating", label: "Café Seating" },
+  { value: "cafe_counter", label: "Café Counter" },
 ] as const;
 
 const ORIENTATIONS = ["north", "south", "east", "west"] as const;

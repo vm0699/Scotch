@@ -138,6 +138,50 @@ export interface FurnitureItem {
   depth: number;
   rotation: 0 | 90 | 180 | 270;
   height: number;
+  /** Links to a CatalogItem (real GLB mesh); undefined/null = legacy box render (Phase 43). */
+  catalog_id?: string | null;
+  /** material_slot -> Material.id, for recolor/retexture (Phase 43). */
+  material_overrides?: Record<string, string>;
+  /** Height off floor in project units — wall/ceiling/tabletop items (Phase 43). */
+  z?: number;
+}
+
+// ── Phase 43: Interior furniture catalog ─────────────────────────────────────
+
+export type CatalogSnap = "floor" | "wall" | "ceiling" | "tabletop";
+
+export interface MaterialSlot {
+  slot: string;
+  editable: boolean;
+}
+
+export interface CatalogLicense {
+  source: string;
+  spdx: string;
+  source_url: string;
+  attribution?: string | null;
+}
+
+/** One vendored, CC0 furniture asset — metadata + real glTF mesh + 2D symbol. */
+export interface CatalogItem {
+  id: string;
+  slug: string;
+  label: string;
+  category: string;
+  style_tags: string[];
+  /** Canonical footprint width in feet, at rotation 0. */
+  footprint_w: number;
+  /** Canonical footprint depth in feet, at rotation 0. */
+  footprint_d: number;
+  height: number;
+  /** Path relative to the API origin — resolve with resolveCatalogAssetUrl(). */
+  mesh_url: string;
+  /** Path relative to the API origin — resolve with resolveCatalogAssetUrl(). */
+  thumbnail_url: string;
+  symbol_id: string;
+  snap: CatalogSnap;
+  material_slots: MaterialSlot[];
+  license: CatalogLicense;
 }
 
 // ── Phase 29: Dimension entities ─────────────────────────────────────────────
@@ -333,6 +377,20 @@ export interface RoomFinish {
   wall_tile_spec_id?: string | null;
 }
 
+// ── Phase 43: per-room interior-furnishing status ────────────────────────────
+
+export type RoomInteriorStatus = "empty" | "designed" | "stale";
+export type InteriorGenerationMode = "deterministic" | "ai" | "hybrid";
+
+export interface RoomInterior {
+  room_id: string;
+  status: RoomInteriorStatus;
+  style: string;
+  mode: InteriorGenerationMode;
+  last_generated_at: string;
+  warnings: string[];
+}
+
 export interface RateEntry {
   category: string;
   item: string;
@@ -472,6 +530,8 @@ export interface ArchitectureProject {
   revision_meta: RevisionMeta;
   // Phase 40 additions
   feasibility: Feasibility;
+  // Phase 43 additions
+  room_interiors: RoomInterior[];
 }
 
 export interface ExportManifest {

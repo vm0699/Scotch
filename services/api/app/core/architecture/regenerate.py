@@ -51,6 +51,8 @@ _ROOM_ZONE: dict[str, str] = {
     "balcony": "front",
     "cafe_seating": "front",
     "office": "front",
+    "foyer": "front",
+    "seating": "front",
     "kitchen": "service",
     "kitchenette": "service",
     "dining": "service",
@@ -80,6 +82,8 @@ _TYPE_ID_PREFIX: dict[str, str] = {
     "office": "office",
     "studio": "studio",
     "restroom": "restroom",
+    "seating": "seat",  # distinct from cafe_seating's "seating" prefix
+    "foyer": "foyer",
 }
 
 # Room types that can be added via the add_room change key.
@@ -103,6 +107,8 @@ _SIZE_KEY: dict[str, str] = {
     "restroom": "restroom",
     "office": "open_plan",
     "studio": "studio_room",
+    "seating": "seating",
+    "foyer": "foyer",
 }
 
 
@@ -151,6 +157,8 @@ def _default_room_name(room_type: str, existing_rooms: list[Room]) -> str:
         "restroom": "Restroom",
         "office": "Open Workspace",
         "studio": "Studio",
+        "seating": "Seating Area",
+        "foyer": "Foyer",
     }
     return label.get(room_type, room_type.replace("_", " ").title())
 
@@ -393,6 +401,20 @@ def apply_changes(
         affected_ids = {c.target_id for c in changes if c.target_id and c.key in room_mutating}
         for sid in affected_ids:
             project.detail_drawings = DetailEngine.mark_stale_for_source(project.detail_drawings, sid)
+
+    # Phase 43 — mark a room's interior stale when THAT room is resized (its
+    # furniture may no longer fit / make sense at the new dimensions).
+    resize_keys = {"room_width", "room_depth"}
+    resized_room_ids = {c.target_id for c in changes if c.target_id and c.key in resize_keys}
+    if resized_room_ids and project.room_interiors:
+        for ri in project.room_interiors:
+            if ri.room_id in resized_room_ids and ri.status == "designed":
+                ri.status = "stale"
+
+    # Removed rooms drop their (now-orphaned) interior status entirely.
+    removed_room_ids = {c.target_id for c in changes if c.target_id and c.key == "remove_room"}
+    if removed_room_ids:
+        project.room_interiors = [ri for ri in project.room_interiors if ri.room_id not in removed_room_ids]
 
     # Refresh auto-dimensions
     from app.core.architecture.dimension_engine import AutoDimensionEngine

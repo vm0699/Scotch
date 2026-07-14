@@ -16,6 +16,7 @@ Wall conventions (matching the plan model):
 
 from __future__ import annotations
 
+import dataclasses
 from dataclasses import dataclass, field as dc_field
 
 
@@ -52,6 +53,20 @@ class FurnitureSpec:
     min_room_area: float = 0.0
     min_room_w: float = 0.0
     min_room_d: float = 0.0
+    # Stage 43.20 — shifts the item further from its wall, into the room, by
+    # this many ft (0 = flush against the wall, the old-and-only behavior).
+    # Needed for a second item sharing the same wall as an already-placed one
+    # (e.g. a chair pulled out in front of a desk) — without it, both items'
+    # candidate boxes start flush at the same wall position and the second one
+    # is silently rejected as overlapping (see furniture_placer.py's docstring,
+    # item 7: "skip it with no warning").
+    wall_offset: float = 0.0
+    # Phase 43 — links this spec to a real vendored GLB (services/api/app/assets/
+    # catalog/). When set, interior_designer.py resolves the CatalogItem's real
+    # footprint/height and overrides width/depth/height on a per-call copy of
+    # this spec before placement, so 2D clearance math and the 3D mesh always
+    # agree on size. None = renders as the legacy plain box (no mesh yet).
+    catalog_id: str | None = None
 
 
 # ── Per-room-type templates ───────────────────────────────────────────────────
@@ -59,68 +74,124 @@ class FurnitureSpec:
 ROOM_FURNITURE: dict[str, list[FurnitureSpec]] = {
 
     # ── Standard bedroom ──────────────────────────────────────────────────────
+    # Phase 43 — the 100%-working interior slice: every entry below is wired to
+    # a real CC0 GLB (services/api/app/assets/catalog/). Width/depth/height here
+    # are generic fallback dims (used only if the catalog lookup ever fails);
+    # interior_designer.py overrides them from the CatalogItem at generation time.
     "bedroom": [
-        FurnitureSpec("double_bed",  "Bed",          5.5, 6.5, 2.0,  "south", 3.5, priority=1),
-        FurnitureSpec("wardrobe",    "Wardrobe",      4.5, 2.0, 7.0,  "north", 2.5, priority=2, min_room_area=88),
+        FurnitureSpec("double_bed",  "Bed",          5.5, 6.5, 2.0,  "south", 2.5, priority=1,
+                      catalog_id="bed_single_frame"),
+        FurnitureSpec("wardrobe",    "Wardrobe",      4.5, 2.0, 7.0,  "north", 2.5, priority=2, min_room_area=88,
+                      catalog_id="wardrobe_painted"),
         FurnitureSpec("bedside_l",   "Bedside Table", 1.5, 1.5, 2.0,  "south", 0.0, priority=3,
-                      x_align="left",  x_gap=0.3),
+                      x_align="left",  x_gap=0.3, catalog_id="nightstand_painted"),
         FurnitureSpec("bedside_r",   "Bedside Table", 1.5, 1.5, 2.0,  "south", 0.0, priority=3,
-                      x_align="right", x_gap=0.3),
-        FurnitureSpec("dresser",     "Dresser",       3.5, 1.5, 4.5,  "east",  2.5, priority=5, min_room_area=100),
+                      x_align="right", x_gap=0.3, catalog_id="nightstand_classic"),
+        FurnitureSpec("dresser",     "Dresser",       3.5, 1.5, 4.5,  "east",  2.5, priority=5, min_room_area=100,
+                      catalog_id="dresser_vintage"),
+        FurnitureSpec("ottoman",     "Ottoman",       2.9, 2.0, 2.0,  "south", 1.5, priority=6, min_room_area=90,
+                      catalog_id="ottoman_bench"),
+        FurnitureSpec("plant",       "Potted Plant",  1.9, 2.1, 4.4,  "west",  1.0, priority=7, min_room_area=95,
+                      catalog_id="potted_plant_01"),
     ],
 
     # ── Master bedroom ────────────────────────────────────────────────────────
+    # Phase 43 Stage 43.11 — dressing_table stays unlinked: no vanity/dressing
+    # table CC0 asset found on Poly Haven (checked directly) — box fallback,
+    # documented, same honest-gap pattern as the kitchen fridge / bathroom.
     "master_bedroom": [
-        FurnitureSpec("king_bed",       "King Bed",      6.5, 7.0, 2.2,  "south", 3.5, priority=1),
-        FurnitureSpec("wardrobe",       "Wardrobe",      5.5, 2.0, 7.0,  "north", 2.5, priority=2),
-        FurnitureSpec("wardrobe_2",     "Wardrobe",      4.0, 2.0, 7.0,  "west",  2.5, priority=3, min_room_area=130),
+        FurnitureSpec("king_bed",       "King Bed",      6.5, 7.0, 2.2,  "south", 2.5, priority=1,
+                      catalog_id="king_bed_frame"),
+        FurnitureSpec("wardrobe",       "Wardrobe",      5.5, 2.0, 7.0,  "north", 2.5, priority=2,
+                      catalog_id="wardrobe_painted"),
+        FurnitureSpec("wardrobe_2",     "Wardrobe",      4.0, 2.0, 7.0,  "west",  2.5, priority=3, min_room_area=130,
+                      catalog_id="wardrobe_painted"),
         FurnitureSpec("bedside_l",      "Bedside Table", 1.5, 1.5, 2.0,  "south", 0.0, priority=4,
-                      x_align="left",  x_gap=0.3),
+                      x_align="left",  x_gap=0.3, catalog_id="nightstand_painted"),
         FurnitureSpec("bedside_r",      "Bedside Table", 1.5, 1.5, 2.0,  "south", 0.0, priority=4,
-                      x_align="right", x_gap=0.3),
+                      x_align="right", x_gap=0.3, catalog_id="nightstand_classic"),
         FurnitureSpec("dressing_table", "Dressing Table",4.0, 1.5, 4.5,  "east",  3.0, priority=5, min_room_area=130),
     ],
 
     # ── Living room ───────────────────────────────────────────────────────────
+    # Phase 43 Stage 43.6 — proof that the interior pipeline generalizes past
+    # bedroom: catalog + template entries only, no new architecture. Several
+    # items reuse bedroom-catalog meshes (armchair, side table, plant,
+    # bookshelf) — the catalog isn't room-scoped, any item fits any room its
+    # category/style makes sense for.
     "living": [
-        FurnitureSpec("tv_unit",      "TV Unit",      6.0, 1.5, 1.5,  "north", 4.0, priority=1),
-        FurnitureSpec("sofa",         "Sofa",         7.0, 3.0, 3.0,  "south", 2.5, priority=2),
-        FurnitureSpec("coffee_table", "Coffee Table", 4.0, 2.0, 1.5,  "center",2.5, priority=3),
-        FurnitureSpec("armchair_l",   "Armchair",     3.0, 3.0, 3.0,  "west",  2.5, priority=4, min_room_area=130),
-        FurnitureSpec("armchair_r",   "Armchair",     3.0, 3.0, 3.0,  "east",  2.5, priority=4, min_room_area=130),
+        FurnitureSpec("tv_unit",      "TV Unit",      6.0, 1.5, 1.5,  "north", 4.0, priority=1,
+                      catalog_id="media_console_wood"),
+        FurnitureSpec("sofa",         "Sofa",         7.0, 3.0, 3.0,  "south", 2.5, priority=2,
+                      catalog_id="sofa_leather"),
+        FurnitureSpec("coffee_table", "Coffee Table", 4.0, 2.0, 1.5,  "center",2.5, priority=3,
+                      catalog_id="coffee_table_modern"),
+        FurnitureSpec("armchair_l",   "Armchair",     3.0, 3.0, 3.0,  "west",  2.5, priority=4, min_room_area=130,
+                      catalog_id="armchair_modern"),
+        FurnitureSpec("armchair_r",   "Armchair",     3.0, 3.0, 3.0,  "east",  2.5, priority=4, min_room_area=130,
+                      catalog_id="armchair_modern"),
         FurnitureSpec("side_table",   "Side Table",   1.5, 1.5, 2.0,  "east",  1.0, priority=6, min_room_area=150,
-                      x_align="right", x_gap=0.3),
+                      x_align="right", x_gap=0.3, catalog_id="side_table_modern"),
+        FurnitureSpec("bookshelf",    "Bookshelf",    3.3, 0.8, 6.8,  "west",  2.0, priority=7, min_room_area=140,
+                      catalog_id="bookshelf_open"),
+        FurnitureSpec("plant",        "Potted Plant", 1.9, 2.1, 4.4,  "east",  1.0, priority=8, min_room_area=160,
+                      catalog_id="potted_plant_01"),
     ],
 
     # ── Open seating / studio living ──────────────────────────────────────────
     "seating": [
-        FurnitureSpec("tv_unit",      "TV Unit",      6.0, 1.5, 1.5,  "north", 4.0, priority=1),
-        FurnitureSpec("sofa",         "Sofa",         7.0, 3.0, 3.0,  "south", 2.5, priority=2),
-        FurnitureSpec("coffee_table", "Coffee Table", 4.0, 2.0, 1.5,  "center",2.5, priority=3),
-        FurnitureSpec("armchair_l",   "Armchair",     3.0, 3.0, 3.0,  "west",  2.5, priority=5, min_room_area=110),
+        FurnitureSpec("tv_unit",      "TV Unit",      6.0, 1.5, 1.5,  "north", 4.0, priority=1,
+                      catalog_id="media_console_wood"),
+        FurnitureSpec("sofa",         "Sofa",         7.0, 3.0, 3.0,  "south", 2.5, priority=2,
+                      catalog_id="sofa_leather"),
+        FurnitureSpec("coffee_table", "Coffee Table", 4.0, 2.0, 1.5,  "center",2.5, priority=3,
+                      catalog_id="coffee_table_modern"),
+        FurnitureSpec("armchair_l",   "Armchair",     3.0, 3.0, 3.0,  "west",  2.5, priority=5, min_room_area=110,
+                      catalog_id="armchair_modern"),
     ],
 
     # ── Dining room ───────────────────────────────────────────────────────────
+    # Phase 43 Stage 43.9 — all six chair_* slots share one catalog dining
+    # chair (furniture_placer.py's _chair_boxes_around_table reads the first
+    # chair spec's catalog-resolved size/id and applies it uniformly).
     "dining": [
-        FurnitureSpec("dining_table", "Dining Table", 5.0, 3.0, 2.5,  "center",2.5, priority=1),
+        FurnitureSpec("dining_table", "Dining Table", 5.0, 3.0, 2.5,  "center",2.5, priority=1,
+                      catalog_id="dining_table_wood"),
         # Chairs: placed by special chair logic around the table
-        FurnitureSpec("chair_n1",    "Chair",         1.5, 1.5, 3.0,  "center",0.0, priority=7),
-        FurnitureSpec("chair_n2",    "Chair",         1.5, 1.5, 3.0,  "center",0.0, priority=7),
-        FurnitureSpec("chair_s1",    "Chair",         1.5, 1.5, 3.0,  "center",0.0, priority=7),
-        FurnitureSpec("chair_s2",    "Chair",         1.5, 1.5, 3.0,  "center",0.0, priority=7),
-        FurnitureSpec("chair_e",     "Chair",         1.5, 1.5, 3.0,  "center",0.0, priority=8, min_room_area=80),
-        FurnitureSpec("chair_w",     "Chair",         1.5, 1.5, 3.0,  "center",0.0, priority=8, min_room_area=80),
-        FurnitureSpec("sideboard",   "Sideboard",     5.0, 1.5, 3.5,  "east",  2.0, priority=6, min_room_area=100),
+        FurnitureSpec("chair_n1",    "Chair",         1.5, 1.5, 3.0,  "center",0.0, priority=7,
+                      catalog_id="dining_chair_set"),
+        FurnitureSpec("chair_n2",    "Chair",         1.5, 1.5, 3.0,  "center",0.0, priority=7,
+                      catalog_id="dining_chair_set"),
+        FurnitureSpec("chair_s1",    "Chair",         1.5, 1.5, 3.0,  "center",0.0, priority=7,
+                      catalog_id="dining_chair_set"),
+        FurnitureSpec("chair_s2",    "Chair",         1.5, 1.5, 3.0,  "center",0.0, priority=7,
+                      catalog_id="dining_chair_set"),
+        FurnitureSpec("chair_e",     "Chair",         1.5, 1.5, 3.0,  "center",0.0, priority=8, min_room_area=80,
+                      catalog_id="dining_chair_set"),
+        FurnitureSpec("chair_w",     "Chair",         1.5, 1.5, 3.0,  "center",0.0, priority=8, min_room_area=80,
+                      catalog_id="dining_chair_set"),
+        FurnitureSpec("sideboard",   "Sideboard",     5.0, 1.5, 3.5,  "east",  2.0, priority=6, min_room_area=100,
+                      catalog_id="media_console_wood"),
     ],
 
     # ── Kitchen ───────────────────────────────────────────────────────────────
+    # Phase 43 Stage 43.7 — counter_n/counter_w stay UNLINKED on purpose: their
+    # 3D geometry already comes from a purpose-built parametric L-counter
+    # (massing-data.ts _buildKitchenCounters, sized to the room's actual
+    # width/depth) — giving them a fixed-size catalog mesh too would double-
+    # render. cooktop has a real CC0 match; refrigerator does not (Poly Haven
+    # has no fridge model) and stays on the box fallback — an honest gap, not
+    # a bug: catalog_id is optional by design for exactly this reason.
     "kitchen": [
         # counter_n width is stretched to room width by the placer
         FurnitureSpec("counter_n",   "Counter",       8.0, 2.0, 3.0,  "north", 4.0, priority=1),
         FurnitureSpec("counter_w",   "Counter",       2.0, 6.0, 3.0,  "west",  4.0, priority=2, min_room_area=80),
         FurnitureSpec("refrigerator","Refrigerator",  2.5, 2.5, 5.5,  "north", 1.5, priority=3,
                       x_align="right", x_gap=0.1),
-        FurnitureSpec("cooktop",     "Cooktop",       2.0, 2.0, 3.0,  "north", 2.5, priority=4),
+        FurnitureSpec("cooktop",     "Cooktop",       2.0, 2.0, 3.0,  "north", 2.5, priority=4,
+                      catalog_id="cooktop_stove"),
+        FurnitureSpec("sink",        "Sink",          1.4, 1.5, 1.6,  "south", 2.0, priority=5, min_room_area=90,
+                      catalog_id="kitchen_sink_unit"),
     ],
 
     # ── Kitchenette ───────────────────────────────────────────────────────────
@@ -132,44 +203,123 @@ ROOM_FURNITURE: dict[str, list[FurnitureSpec]] = {
 
     # ── Study / home office ───────────────────────────────────────────────────
     "study": [
-        FurnitureSpec("desk",         "Desk",         5.0, 2.5, 2.5,  "north", 3.0, priority=1),
-        FurnitureSpec("office_chair", "Chair",        2.0, 2.0, 3.5,  "north", 1.5, priority=2),
-        FurnitureSpec("bookshelf_e",  "Bookshelf",    3.0, 1.0, 7.0,  "east",  2.0, priority=3, min_room_area=60),
-        FurnitureSpec("bookshelf_w",  "Bookshelf",    3.0, 1.0, 7.0,  "west",  2.0, priority=4, min_room_area=80),
+        FurnitureSpec("desk",         "Desk",         5.0, 2.5, 2.5,  "north", 3.0, priority=1,
+                      catalog_id="desk_office_metal"),
+        # wall_offset pulls the chair out from the wall past the desk's real
+        # depth (3.11 ft) — without it, both items sit flush against the same
+        # wall at the same position and the chair is silently dropped as
+        # overlapping (see Stage 43.20's wall_offset fix in furniture_placer.py).
+        FurnitureSpec("office_chair", "Chair",        2.0, 2.0, 3.5,  "north", 1.5, priority=2, wall_offset=3.4,
+                      catalog_id="office_chair_school"),
+        FurnitureSpec("bookshelf_e",  "Bookshelf",    3.0, 1.0, 7.0,  "east",  2.0, priority=3, min_room_area=60,
+                      catalog_id="bookshelf_open"),
+        FurnitureSpec("bookshelf_w",  "Bookshelf",    3.0, 1.0, 7.0,  "west",  2.0, priority=4, min_room_area=80,
+                      catalog_id="bookshelf_open"),
     ],
 
     # ── Bathroom (standard) ───────────────────────────────────────────────────
+    # Phase 43 Stage 43.14 — Poly Haven has no bathroom fixtures at all
+    # (checked directly); these three come from Kenney's "Furniture Kit"
+    # (CC0, kenney.nl/assets/furniture-kit) instead, extracted via
+    # tools/catalog-pipeline/download-kenney.mjs. "shower" renders a bathtub
+    # mesh — no dedicated shower-stall CC0 model was found either; a
+    # bath/shower combo is a common enough real fixture that this is an
+    # honest approximation, not a mislabel.
     "bathroom": [
-        FurnitureSpec("wc",     "WC",     1.5, 2.5, 2.5,  "north", 2.0, priority=1, x_align="left"),
-        FurnitureSpec("basin",  "Basin",  2.0, 1.5, 3.0,  "east",  2.0, priority=2),
-        FurnitureSpec("shower", "Shower", 3.0, 3.0, 7.0,  "south", 0.5, priority=3, x_align="right"),
+        FurnitureSpec("wc",     "WC",     1.5, 2.5, 2.5,  "north", 2.0, priority=1, x_align="left",
+                      catalog_id="toilet_standard"),
+        FurnitureSpec("basin",  "Basin",  2.0, 1.5, 3.0,  "east",  2.0, priority=2,
+                      catalog_id="bathroom_sink"),
+        FurnitureSpec("shower", "Shower", 3.0, 3.0, 7.0,  "south", 0.5, priority=3, x_align="right",
+                      catalog_id="bathtub_standard"),
     ],
 
     # ── Foyer / entry ─────────────────────────────────────────────────────────
+    # Phase 43 Stage 43.8 — console_table has a real CC0 match; shoe_rack does
+    # not (no suitable Poly Haven asset found) and stays on the box fallback.
     "foyer": [
         FurnitureSpec("shoe_rack",     "Shoe Rack",  3.0, 1.0, 3.5,  "west",  2.0, priority=2),
-        FurnitureSpec("console_table", "Console",    3.0, 1.0, 3.0,  "north", 2.5, priority=3, min_room_area=40),
+        FurnitureSpec("console_table", "Console",    3.0, 1.0, 3.0,  "north", 2.5, priority=3, min_room_area=40,
+                      catalog_id="console_table_classic"),
     ],
 
     # ── Balcony ───────────────────────────────────────────────────────────────
+    # Phase 43 Stage 43.12 — outdoor_table reuses side_table_modern (proportionate
+    # for a balcony) rather than Poly Haven's only outdoor table (a 7x10 ft
+    # picnic table — would never fit a real balcony's min_room_area=40 gate).
     "balcony": [
         FurnitureSpec("outdoor_chair_l", "Chair", 2.0, 2.0, 3.0, "south", 1.5, priority=2,
-                      x_align="left",  x_gap=0.5),
+                      x_align="left",  x_gap=0.5, catalog_id="outdoor_chair_plastic"),
         FurnitureSpec("outdoor_chair_r", "Chair", 2.0, 2.0, 3.0, "south", 1.5, priority=2,
-                      x_align="right", x_gap=0.5),
-        FurnitureSpec("outdoor_table",   "Table", 2.5, 2.5, 2.5, "center",1.5, priority=3, min_room_area=40),
+                      x_align="right", x_gap=0.5, catalog_id="outdoor_chair_plastic"),
+        FurnitureSpec("outdoor_table",   "Table", 2.5, 2.5, 2.5, "center",1.5, priority=3, min_room_area=40,
+                      catalog_id="side_table_modern"),
     ],
 
     # ── Storage / utility ─────────────────────────────────────────────────────
+    # Phase 43 Stage 43.13 — reuses the study/living bookshelf mesh; a storage
+    # room's shelving is functionally the same object as a bookshelf.
     "storage": [
-        FurnitureSpec("shelving_n", "Shelving", 4.0, 1.0, 7.0, "north", 2.5, priority=3),
-        FurnitureSpec("shelving_e", "Shelving", 4.0, 1.0, 7.0, "east",  2.5, priority=4, min_room_area=30),
+        FurnitureSpec("shelving_n", "Shelving", 4.0, 1.0, 7.0, "north", 2.5, priority=3,
+                      catalog_id="bookshelf_open"),
+        FurnitureSpec("shelving_e", "Shelving", 4.0, 1.0, 7.0, "east",  2.5, priority=4, min_room_area=30,
+                      catalog_id="bookshelf_open"),
     ],
 
     # ── Restroom ─────────────────────────────────────────────────────────────
     "restroom": [
-        FurnitureSpec("wc",    "WC",    1.5, 2.5, 2.5, "north", 2.0, priority=1, x_align="left"),
-        FurnitureSpec("basin", "Basin", 2.0, 1.5, 3.0, "east",  2.0, priority=2),
+        FurnitureSpec("wc",    "WC",    1.5, 2.5, 2.5, "north", 2.0, priority=1, x_align="left",
+                      catalog_id="toilet_standard"),
+        FurnitureSpec("basin", "Basin", 2.0, 1.5, 3.0, "east",  2.0, priority=2,
+                      catalog_id="bathroom_sink"),
+    ],
+
+    # ── Office / open workspace ───────────────────────────────────────────────
+    # Stage 43.20 — the deterministic generator has produced type="office" rooms
+    # since the café/office building-kind shipped (floorplan_generator.py's
+    # _office_fallback_program), but Phase 43 never gave it a furniture
+    # template until now — it rendered as an empty shell. Reuses the same
+    # desk/chair/bookshelf catalog items as "study" (a workstation is a
+    # workstation); two desk pairs plus a meeting table for larger rooms.
+    "office": [
+        FurnitureSpec("desk_1",       "Desk",         5.0, 2.5, 2.5,  "north", 3.0, priority=1,
+                      x_align="left",  x_gap=0.5, catalog_id="desk_office_metal"),
+        FurnitureSpec("chair_1",      "Chair",        2.0, 2.0, 3.5,  "north", 1.5, priority=2, wall_offset=3.4,
+                      x_align="left",  x_gap=0.5, catalog_id="office_chair_school"),
+        FurnitureSpec("desk_2",       "Desk",         5.0, 2.5, 2.5,  "north", 3.0, priority=3, min_room_area=200,
+                      x_align="right", x_gap=0.5, catalog_id="desk_office_metal"),
+        FurnitureSpec("chair_2",      "Chair",        2.0, 2.0, 3.5,  "north", 1.5, priority=4, min_room_area=200, wall_offset=3.4,
+                      x_align="right", x_gap=0.5, catalog_id="office_chair_school"),
+        FurnitureSpec("desk_3",       "Desk",         5.0, 2.5, 2.5,  "south", 3.0, priority=5, min_room_area=320,
+                      x_align="left",  x_gap=0.5, catalog_id="desk_office_metal"),
+        FurnitureSpec("chair_3",      "Chair",        2.0, 2.0, 3.5,  "south", 1.5, priority=6, min_room_area=320, wall_offset=3.4,
+                      x_align="left",  x_gap=0.5, catalog_id="office_chair_school"),
+        FurnitureSpec("meeting_table","Meeting Table",5.0, 3.0, 2.5,  "center",2.5, priority=7, min_room_area=450,
+                      catalog_id="dining_table_wood"),
+        FurnitureSpec("bookshelf",    "Bookshelf",    3.0, 1.0, 7.0,  "east",  2.0, priority=8, min_room_area=250,
+                      catalog_id="bookshelf_open"),
+    ],
+
+    # ── Café seating ───────────────────────────────────────────────────────────
+    # Stage 43.21 — reuses the dining table/chair catalog items and the
+    # existing chair-around-table placement logic (_chair_boxes_around_table
+    # keys off spec.type == "dining_table" / the chair_* type set, not the
+    # room type — a café bistro table is placed exactly like a dining table).
+    "cafe_seating": [
+        FurnitureSpec("dining_table", "Café Table", 5.0, 3.0, 2.5, "center", 2.5, priority=1,
+                      catalog_id="dining_table_wood"),
+        FurnitureSpec("chair_n1", "Chair",      1.5, 1.5, 3.0, "center", 0.0, priority=2,
+                      catalog_id="dining_chair_set"),
+        FurnitureSpec("chair_s1", "Chair",      1.5, 1.5, 3.0, "center", 0.0, priority=2,
+                      catalog_id="dining_chair_set"),
+        FurnitureSpec("plant",    "Potted Plant", 1.9, 2.1, 4.4, "west", 1.0, priority=5, min_room_area=140,
+                      catalog_id="potted_plant_01"),
+    ],
+
+    # ── Café service counter ──────────────────────────────────────────────────
+    "cafe_counter": [
+        FurnitureSpec("counter", "Service Counter", 4.0, 1.5, 3.3, "north", 2.5, priority=1,
+                      catalog_id="console_table_classic"),
     ],
 
     # ── Corridor / parking — no furniture ────────────────────────────────────
@@ -206,12 +356,47 @@ def furniture_height(ftype: str) -> float:
     return FURNITURE_HEIGHTS.get(ftype, _DEFAULT_HEIGHT)
 
 
+def _with_catalog_dims(spec: FurnitureSpec) -> FurnitureSpec:
+    """Phase 43 — every caller of get_template() gets catalog-accurate
+    width/depth/height for catalog-backed specs (not just interior_designer.py's
+    room-specific generation), so whole-project generation and the dedicated
+    interior endpoint never disagree about a catalog item's real size. Returns
+    a copy — never mutates the shared ROOM_FURNITURE dataclass instances.
+    """
+    if not spec.catalog_id:
+        return spec
+    try:
+        from app.core.catalog import get_catalog_item
+
+        item = get_catalog_item(spec.catalog_id)
+    except Exception:  # noqa: BLE001 — catalog unavailable is not fatal to generation
+        return spec
+    return dataclasses.replace(spec, width=item.footprint_w, depth=item.footprint_d, height=item.height)
+
+
+def effective_room_type(room_id: str, room_type: str, room_name: str) -> str:
+    """Resolve the furniture-template key to use for a room.
+
+    The floor plan generator (and `regenerate.py`'s add_room) always store
+    `type="bedroom"` for a master bedroom too — "master" is purely a naming
+    convention (the first bedroom added is auto-named "Master Bedroom"), not
+    a distinct room.type. Without this, the "master_bedroom" template (king
+    bed, dressing table — Stage 43.11) is unreachable: no room ever actually
+    carries that literal type string. Detect it by the generator's own
+    semantic id ("bed-master") or the name, and redirect to that template.
+    """
+    if room_type == "bedroom" and (room_id == "bed-master" or "master" in room_name.lower()):
+        return "master_bedroom"
+    return room_type
+
+
 def get_template(room_type: str, room_w: float, room_d: float) -> list[FurnitureSpec]:
-    """Return the size-filtered template for *room_type*."""
+    """Return the size-filtered template for *room_type*, with catalog-backed
+    specs' dimensions resolved to their real CatalogItem footprint."""
     area = room_w * room_d
     specs = ROOM_FURNITURE.get(room_type.lower(), [])
     return [
-        s for s in specs
+        _with_catalog_dims(s) for s in specs
         if s.min_room_area <= area
         and s.min_room_w <= room_w
         and s.min_room_d <= room_d

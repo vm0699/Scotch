@@ -35,6 +35,7 @@ import { ReviewSection } from "@/components/workspace/review-section";
 import { DetailStudio } from "@/components/workspace/detail-studio";
 import { HistorySection } from "@/components/workspace/history-section";
 import { IntelligenceSection } from "@/components/workspace/intelligence-section";
+import { InteriorStudio } from "@/components/workspace/interior-studio";
 import { MepStudio } from "@/components/workspace/mep-studio";
 import { ProgramGrid, ProgramGridSkeleton } from "@/components/workspace/program-grid";
 import { RoomEditor } from "@/components/workspace/room-editor";
@@ -48,6 +49,7 @@ import type {
   ClientBrief,
   ComplianceReport,
   DetailType,
+  InteriorEditAction,
   MEPSystem,
   ParameterChange,
   RuleResult,
@@ -67,6 +69,7 @@ import {
 } from "@/features/api/client";
 import {
   type ArchitectureProject,
+  type InteriorGenerationMode,
   type ProjectWarning,
 } from "@/features/project/types";
 import { cn } from "@/lib/utils";
@@ -788,6 +791,12 @@ export function DataPanel({
   onEditRate,
   onEditTileSpec,
   boqCalculating,
+  selectedFurnitureId,
+  onSelectFurniture,
+  onGenerateInterior,
+  onEditInterior,
+  onGenerateAllInteriors,
+  interiorBusy,
 }: {
   project: ArchitectureProject | null;
   storedId: string | null;
@@ -810,6 +819,12 @@ export function DataPanel({
   onEditRate?: (category: string, item: string, rate: number) => Promise<void>;
   onEditTileSpec?: (id: string, field: string, value: number) => Promise<void>;
   boqCalculating?: boolean;
+  selectedFurnitureId?: string | null;
+  onSelectFurniture?: (id: string | null) => void;
+  onGenerateInterior?: (roomId: string, opts: { mode: InteriorGenerationMode; style: string }) => void;
+  onEditInterior?: (roomId: string, edit: InteriorEditAction) => void;
+  onGenerateAllInteriors?: (opts: { mode: InteriorGenerationMode; style: string; overwrite: boolean }) => void;
+  interiorBusy?: boolean;
 }) {
   const selectedRoom = useMemo(
     () => project?.rooms.find((r) => r.id === selectedRoomId) ?? null,
@@ -909,6 +924,21 @@ export function DataPanel({
                 </Button>
               </div>
             </div>
+          </PanelSection>
+        )}
+
+        {project && (
+          <PanelSection title="Interior Design">
+            <InteriorStudio
+              project={project}
+              selectedRoomId={selectedRoomId}
+              selectedFurnitureId={selectedFurnitureId ?? null}
+              onSelectFurniture={onSelectFurniture ?? (() => {})}
+              onGenerate={(roomId, opts) => onGenerateInterior?.(roomId, opts)}
+              onEdit={(roomId, edit) => onEditInterior?.(roomId, edit)}
+              onGenerateAll={(opts) => onGenerateAllInteriors?.(opts)}
+              busy={!!interiorBusy}
+            />
           </PanelSection>
         )}
 

@@ -1,3 +1,7 @@
+"use client";
+
+import { useRef, useState } from "react";
+
 import type {
   ArchitectureProject,
   Door,
@@ -23,6 +27,24 @@ import { roomArea } from "@/features/project/types";
 export const SCALE = 12; // px per ft
 const WALL_T = 0.5; // wall thickness in ft
 const MARGIN = 64; // px around the site for dimensions + north arrow
+const DRAG_SNAP_FT = 0.25; // Stage 43.17 — grid snap while dragging furniture
+
+/** Screen client coords -> plan-space feet, via the SVG's own CTM (accounts
+ *  for CSS zoom/scale automatically) minus the constant MARGIN offset of the
+ *  root <g transform="translate(MARGIN MARGIN)">. */
+function clientToFeet(svg: SVGSVGElement, clientX: number, clientY: number): { x: number; y: number } {
+  const ctm = svg.getScreenCTM();
+  if (!ctm) return { x: 0, y: 0 };
+  const pt = svg.createSVGPoint();
+  pt.x = clientX;
+  pt.y = clientY;
+  const local = pt.matrixTransform(ctm.inverse());
+  return { x: (local.x - MARGIN) / SCALE, y: (local.y - MARGIN) / SCALE };
+}
+
+function snapFt(v: number): number {
+  return Math.round(v / DRAG_SNAP_FT) * DRAG_SNAP_FT;
+}
 
 export function planPixelSize(project: ArchitectureProject): {
   width: number;
@@ -301,9 +323,29 @@ function NorthArrow({
  * Symbol coordinate system: (0,0) = top-left of item bounding box.
  * w / h are item width / depth in pixels.
  */
-function FurnitureSymbol({ item }: { item: FurnitureItem }) {
-  const px = item.x * SCALE;
-  const py = item.y * SCALE;
+function FurnitureSymbol({
+  item,
+  selected,
+  onSelect,
+  draggable,
+  onMove,
+}: {
+  item: FurnitureItem;
+  selected?: boolean;
+  onSelect?: (id: string) => void;
+  /** Stage 43.17 — freehand drag-with-snap. Self-contained: this component
+   *  owns its own live drag position and only reports the FINAL x/y once,
+   *  on release — the parent doesn't need to know a drag is in progress. */
+  draggable?: boolean;
+  onMove?: (id: string, x: number, y: number) => void;
+}) {
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const dragRef = useRef<{ grabDX: number; grabDY: number; moved: boolean; lastX: number; lastY: number } | null>(null);
+
+  const ix = dragPos?.x ?? item.x;
+  const iy = dragPos?.y ?? item.y;
+  const px = ix * SCALE;
+  const py = iy * SCALE;
   const pw = item.width * SCALE;
   const ph = item.depth * SCALE;
   const cx = px + pw / 2;
@@ -423,8 +465,8 @@ function FurnitureSymbol({ item }: { item: FurnitureItem }) {
       );
     }
 
-    // ── Dining table ──────────────────────────────────────────────────────
-    if (type === "dining_table") {
+    // ── Dining table (also office/café meeting tables — same shape) ────────
+    if (type === "dining_table" || type === "meeting_table") {
       return (
         <rect x={px} y={py} width={pw} height={ph} rx={4} className={fillClass} strokeWidth={sw} />
       );
@@ -452,7 +494,7 @@ function FurnitureSymbol({ item }: { item: FurnitureItem }) {
     }
 
     // ── Desk ──────────────────────────────────────────────────────────────
-    if (type === "desk") {
+    if (type.startsWith("desk")) {
       const returnW = pw * 0.35;
       const returnH = ph * 0.45;
       return (
@@ -473,6 +515,22 @@ function FurnitureSymbol({ item }: { item: FurnitureItem }) {
             className={baseClass} strokeWidth={sw} />
         </g>
       );
+    }
+
+    // ── Potted plant ──────────────────────────────────────────────────────
+    if (type === "plant") {
+      const r = Math.min(pw, ph) / 2;
+      return (
+        <g>
+          <circle cx={cx} cy={cy} r={r * 0.9} className="fill-none stroke-muted-foreground/70" strokeWidth={sw} strokeDasharray="1.2 1" />
+          <circle cx={cx} cy={cy} r={r * 0.35} className={fillClass} strokeWidth={sw} />
+        </g>
+      );
+    }
+
+    // ── Ottoman ───────────────────────────────────────────────────────────
+    if (type === "ottoman") {
+      return <rect x={px} y={py} width={pw} height={ph} rx={pw * 0.15} className={fillClass} strokeWidth={sw} />;
     }
 
     // ── Bookshelf ─────────────────────────────────────────────────────────
@@ -517,6 +575,18 @@ function FurnitureSymbol({ item }: { item: FurnitureItem }) {
             className="fill-card stroke-muted-foreground/60" strokeWidth={0.6} />
           {/* tap dot */}
           <circle cx={cx} cy={py + ph * 0.15} r={1.5} className="fill-muted-foreground/60" />
+        </g>
+      );
+    }
+
+    // ── Kitchen sink ──────────────────────────────────────────────────────
+    if (type === "sink") {
+      return (
+        <g>
+          <rect x={px} y={py} width={pw} height={ph} rx={1} className={fillClass} strokeWidth={sw} />
+          <rect x={px + pw * 0.15} y={py + ph * 0.2} width={pw * 0.7} height={ph * 0.6} rx={2}
+            className="fill-card stroke-muted-foreground/60" strokeWidth={0.6} />
+          <circle cx={cx} cy={py + ph * 0.15} r={1.2} className="fill-muted-foreground/60" />
         </g>
       );
     }
@@ -617,8 +687,86 @@ function FurnitureSymbol({ item }: { item: FurnitureItem }) {
     return <rect x={px} y={py} width={pw} height={ph} className={fillClass} strokeWidth={sw} />;
   }
 
+  const handlePointerDown = (e: React.PointerEvent<SVGGElement>) => {
+    if (!draggable) return;
+    e.stopPropagation();
+    const svg = e.currentTarget.ownerSVGElement;
+    if (!svg) return;
+    const cursor = clientToFeet(svg, e.clientX, e.clientY);
+    dragRef.current = { grabDX: item.x - cursor.x, grabDY: item.y - cursor.y, moved: false, lastX: item.x, lastY: item.y };
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Pointer capture can fail for non-standard pointer sessions (e.g. some
+      // automated/synthetic input) — drag still works via bubbled move/up.
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<SVGGElement>) => {
+    if (!dragRef.current) return;
+    const svg = e.currentTarget.ownerSVGElement;
+    if (!svg) return;
+    const cursor = clientToFeet(svg, e.clientX, e.clientY);
+    const rawX = cursor.x + dragRef.current.grabDX;
+    const rawY = cursor.y + dragRef.current.grabDY;
+    if (!dragRef.current.moved && Math.hypot(rawX - item.x, rawY - item.y) > 0.05) {
+      dragRef.current.moved = true;
+    }
+    if (dragRef.current.moved) {
+      const snapped = { x: Math.max(0, snapFt(rawX)), y: Math.max(0, snapFt(rawY)) };
+      dragRef.current.lastX = snapped.x;
+      dragRef.current.lastY = snapped.y;
+      setDragPos(snapped);
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<SVGGElement>) => {
+    if (!dragRef.current) return;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // no-op — see handlePointerDown
+    }
+    const { moved, lastX, lastY } = dragRef.current;
+    dragRef.current = null;
+    setDragPos(null);
+    if (moved && onMove) {
+      onMove(item.id, lastX, lastY);
+    } else if (!moved && onSelect) {
+      // Plain click (no drag distance) — select, same as the onClick path,
+      // but pointerdown already stopped propagation so onClick won't fire.
+      onSelect(item.id);
+    }
+  };
+
   return (
-    <g opacity={0.85}>
+    <g
+      opacity={selected ? 1 : 0.85}
+      className={onSelect ? (draggable ? "cursor-move" : "cursor-pointer") : undefined}
+      onClick={
+        onSelect && !draggable
+          ? (e) => {
+              e.stopPropagation();
+              onSelect(item.id);
+            }
+          : undefined
+      }
+      onPointerDown={draggable ? handlePointerDown : undefined}
+      onPointerMove={draggable ? handlePointerMove : undefined}
+      onPointerUp={draggable ? handlePointerUp : undefined}
+    >
+      {selected && (
+        <rect
+          x={px - 2}
+          y={py - 2}
+          width={pw + 4}
+          height={ph + 4}
+          rx={2}
+          className={dragPos ? "fill-none stroke-emerald-500" : "fill-none stroke-sky-500"}
+          strokeWidth={1.5}
+          strokeDasharray="3 2"
+        />
+      )}
       {symbol()}
     </g>
   );
@@ -628,11 +776,20 @@ function FurnitureLayer({
   project,
   visibleRoomIds,
   show,
+  selectedItemId,
+  onSelectItem,
+  draggable,
+  onMoveFurniture,
 }: {
   project: ArchitectureProject;
   visibleRoomIds: Set<string>;
   /** Override project.show_furniture for canvas-level toggle. */
   show?: boolean;
+  selectedItemId?: string | null;
+  onSelectItem?: (id: string) => void;
+  /** Stage 43.17 — freehand drag-with-snap. */
+  draggable?: boolean;
+  onMoveFurniture?: (id: string, x: number, y: number) => void;
 }) {
   const shouldShow = show !== undefined ? show : project.show_furniture;
   if (!shouldShow) return null;
@@ -642,7 +799,14 @@ function FurnitureLayer({
   return (
     <g>
       {visible.map((item) => (
-        <FurnitureSymbol key={item.id} item={item} />
+        <FurnitureSymbol
+          key={item.id}
+          item={item}
+          selected={item.id === selectedItemId}
+          onSelect={onSelectItem}
+          draggable={draggable}
+          onMove={onMoveFurniture}
+        />
       ))}
     </g>
   );
@@ -840,6 +1004,9 @@ export function FloorPlanSvg({
   activeMepLayers,
   selectedMepPointId,
   onSelectMepPoint,
+  selectedFurnitureId,
+  onSelectFurniture,
+  onMoveFurniture,
 }: {
   project: ArchitectureProject;
   style?: React.CSSProperties;
@@ -858,6 +1025,11 @@ export function FloorPlanSvg({
   activeMepLayers?: Set<MEPSystem>;
   selectedMepPointId?: string | null;
   onSelectMepPoint?: (id: string) => void;
+  /** Selected furniture item (Phase 43 — click-to-select interior editing). */
+  selectedFurnitureId?: string | null;
+  onSelectFurniture?: (id: string) => void;
+  /** Stage 43.17 — freehand drag-with-snap; supplying this enables dragging. */
+  onMoveFurniture?: (id: string, x: number, y: number) => void;
 }) {
   const { site } = project;
   const { width: vw, height: vh } = planPixelSize(project);
@@ -917,7 +1089,15 @@ export function FloorPlanSvg({
             ) : null;
           })}
         </g>
-        <FurnitureLayer project={project} visibleRoomIds={visibleRoomIds} show={showFurniturePlan} />
+        <FurnitureLayer
+          project={project}
+          visibleRoomIds={visibleRoomIds}
+          show={showFurniturePlan}
+          selectedItemId={selectedFurnitureId}
+          onSelectItem={onSelectFurniture}
+          draggable={!!onMoveFurniture}
+          onMoveFurniture={onMoveFurniture}
+        />
         {/* MEP overlay (Phase 29) */}
         {mepLayers.size > 0 && (
           <MEPLayer

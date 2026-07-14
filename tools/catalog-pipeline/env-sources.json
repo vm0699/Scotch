@@ -1,0 +1,48 @@
+{
+  "hdri": {
+    "key": "interior_soft",
+    "slug": "white_home_studio",
+    "res": "1k",
+    "label": "White Home Studio",
+    "source": "Poly Haven",
+    "source_url": "https://polyhaven.com/a/white_home_studio",
+    "spdx": "CC0-1.0"
+  },
+  "materials": [
+    {
+      "key": "floor",
+      "label": "Light Oak Wood Floor",
+      "assetId": "WoodFloor051",
+      "res": "1K",
+      "repeat_ft": 6
+    },
+    {
+      "key": "floor_tile_light",
+      "label": "White Ceramic Tile",
+      "assetId": "Tiles133A",
+      "res": "1K",
+      "repeat_ft": 2
+    },
+    {
+      "key": "floor_tile_dark",
+      "label": "Black Square Tile",
+      "assetId": "Tiles052",
+      "res": "1K",
+      "repeat_ft": 2
+    },
+    {
+      "key": "floor_marble",
+      "label": "Beige Marble",
+      "assetId": "Marble014",
+      "res": "1K",
+      "repeat_ft": 4
+    },
+    {
+      "key": "wall",
+      "label": "White Plaster Wall",
+      "assetId": "Plaster004",
+      "res": "1K",
+      "repeat_ft": 8
+    }
+  ]
+}

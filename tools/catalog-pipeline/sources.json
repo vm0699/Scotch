@@ -1,0 +1,309 @@
+{
+  "room_type": "bedroom + master bedroom + living room + kitchen + dining + study + foyer + balcony + bathroom",
+  "items": [
+    {
+      "id": "bed_single_frame",
+      "slug": "old_bed_frame",
+      "label": "Single Bed Frame",
+      "category": "bed",
+      "style_tags": ["vintage", "industrial", "traditional"],
+      "snap": "floor",
+      "symbol_id": "bed",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "nightstand_painted",
+      "slug": "painted_wooden_nightstand",
+      "label": "Painted Nightstand",
+      "category": "nightstand",
+      "style_tags": ["classic", "rustic"],
+      "snap": "floor",
+      "symbol_id": "nightstand",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "nightstand_classic",
+      "slug": "ClassicNightstand_01",
+      "label": "Classic Nightstand",
+      "category": "nightstand",
+      "style_tags": ["classic", "traditional"],
+      "snap": "floor",
+      "symbol_id": "nightstand",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "wardrobe_painted",
+      "slug": "painted_wooden_cabinet",
+      "label": "Painted Wardrobe Cabinet",
+      "category": "wardrobe",
+      "style_tags": ["classic", "rustic"],
+      "snap": "floor",
+      "symbol_id": "wardrobe",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "dresser_vintage",
+      "slug": "vintage_wooden_drawer_01",
+      "label": "Vintage Dresser",
+      "category": "dresser",
+      "style_tags": ["vintage", "traditional"],
+      "snap": "floor",
+      "symbol_id": "dresser",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "armchair_modern",
+      "slug": "modern_arm_chair_01",
+      "label": "Modern Armchair",
+      "category": "chair",
+      "style_tags": ["modern", "minimalist"],
+      "snap": "floor",
+      "symbol_id": "armchair",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "side_table_modern",
+      "slug": "side_table_01",
+      "label": "Side Table",
+      "category": "side_table",
+      "style_tags": ["modern", "minimalist"],
+      "snap": "floor",
+      "symbol_id": "side_table",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "mirror_ornate",
+      "slug": "ornate_mirror_01",
+      "label": "Ornate Wall Mirror",
+      "category": "mirror",
+      "style_tags": ["classic", "traditional"],
+      "snap": "wall",
+      "symbol_id": "mirror",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "ceiling_lamp_modern",
+      "slug": "modern_ceiling_lamp_01",
+      "label": "Modern Pendant Lamp",
+      "category": "lamp_ceiling",
+      "style_tags": ["modern", "minimalist"],
+      "snap": "ceiling",
+      "symbol_id": "ceiling_lamp",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "desk_lamp_arm",
+      "slug": "desk_lamp_arm_01",
+      "label": "Articulated Desk Lamp",
+      "category": "lamp_desk",
+      "style_tags": ["modern", "industrial"],
+      "snap": "tabletop",
+      "symbol_id": "desk_lamp",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "potted_plant_01",
+      "slug": "potted_plant_01",
+      "label": "Potted Plant",
+      "category": "plant",
+      "style_tags": ["modern", "classic", "rustic"],
+      "snap": "floor",
+      "symbol_id": "plant",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "vase_ceramic",
+      "slug": "ceramic_vase_01",
+      "label": "Ceramic Vase",
+      "category": "decor",
+      "style_tags": ["modern", "minimalist"],
+      "snap": "tabletop",
+      "symbol_id": "vase",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "picture_frame_hanging",
+      "slug": "hanging_picture_frame_01",
+      "label": "Hanging Picture Frame",
+      "category": "wall_art",
+      "style_tags": ["modern", "minimalist"],
+      "snap": "wall",
+      "symbol_id": "picture_frame",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "bookshelf_open",
+      "slug": "Shelf_01",
+      "label": "Open Bookshelf",
+      "category": "shelving",
+      "style_tags": ["modern", "industrial"],
+      "snap": "floor",
+      "symbol_id": "bookshelf",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "ottoman_bench",
+      "slug": "Ottoman_01",
+      "label": "Bed-End Ottoman",
+      "category": "ottoman",
+      "style_tags": ["modern", "minimalist"],
+      "snap": "floor",
+      "symbol_id": "ottoman",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "sofa_leather",
+      "slug": "sofa_02",
+      "label": "Leather Sofa",
+      "category": "sofa",
+      "style_tags": ["modern", "classic"],
+      "snap": "floor",
+      "symbol_id": "sofa",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "coffee_table_modern",
+      "slug": "modern_coffee_table_01",
+      "label": "Modern Coffee Table",
+      "category": "coffee_table",
+      "style_tags": ["modern", "minimalist"],
+      "snap": "floor",
+      "symbol_id": "coffee_table",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "media_console_wood",
+      "slug": "WoodenTable_03",
+      "label": "Wooden Media Console",
+      "category": "tv_unit",
+      "style_tags": ["vintage", "rustic"],
+      "snap": "floor",
+      "symbol_id": "tv_unit",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "cooktop_stove",
+      "slug": "electric_stove",
+      "label": "Electric Stove",
+      "category": "cooktop",
+      "style_tags": ["modern", "industrial"],
+      "snap": "floor",
+      "symbol_id": "cooktop",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "console_table_classic",
+      "slug": "ClassicConsole_01",
+      "label": "Classic Console Table",
+      "category": "console_table",
+      "style_tags": ["classic", "vintage"],
+      "snap": "floor",
+      "symbol_id": "console_table",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "dining_table_wood",
+      "slug": "dining_table",
+      "label": "Dining Table",
+      "category": "dining_table",
+      "style_tags": ["rustic", "classic"],
+      "snap": "floor",
+      "symbol_id": "dining_table",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "dining_chair_set",
+      "slug": "dining_chair_02",
+      "label": "Dining Chair",
+      "category": "dining_chair",
+      "style_tags": ["modern", "classic"],
+      "snap": "floor",
+      "symbol_id": "dining_chair",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "desk_office_metal",
+      "slug": "metal_office_desk",
+      "label": "Metal Office Desk",
+      "category": "desk",
+      "style_tags": ["modern", "industrial"],
+      "snap": "floor",
+      "symbol_id": "desk",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "office_chair_school",
+      "slug": "SchoolChair_01",
+      "label": "Office Chair",
+      "category": "office_chair",
+      "style_tags": ["classic", "industrial"],
+      "snap": "floor",
+      "symbol_id": "office_chair",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "king_bed_frame",
+      "slug": "GothicBed_01",
+      "label": "King Bed Frame",
+      "category": "bed",
+      "style_tags": ["classic", "traditional"],
+      "snap": "floor",
+      "symbol_id": "bed",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "outdoor_chair_plastic",
+      "slug": "plastic_monobloc_chair_01",
+      "label": "Outdoor Chair",
+      "category": "outdoor_chair",
+      "style_tags": ["modern", "minimalist"],
+      "snap": "floor",
+      "symbol_id": "outdoor_chair",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "toilet_standard",
+      "slug": "toilet_standard",
+      "source": "kenney",
+      "label": "Toilet",
+      "category": "wc",
+      "style_tags": ["modern", "minimalist"],
+      "snap": "floor",
+      "symbol_id": "wc",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "bathroom_sink",
+      "slug": "bathroom_sink",
+      "source": "kenney",
+      "label": "Bathroom Sink",
+      "category": "basin",
+      "style_tags": ["modern", "minimalist"],
+      "snap": "floor",
+      "symbol_id": "basin",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "bathtub_standard",
+      "slug": "bathtub_standard",
+      "source": "kenney",
+      "label": "Bathtub",
+      "category": "bathtub",
+      "style_tags": ["modern", "minimalist"],
+      "snap": "floor",
+      "symbol_id": "shower",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    },
+    {
+      "id": "kitchen_sink_unit",
+      "slug": "kitchen_sink_unit",
+      "source": "kenney",
+      "label": "Kitchen Sink Unit",
+      "category": "sink",
+      "style_tags": ["modern", "minimalist"],
+      "snap": "floor",
+      "symbol_id": "counter",
+      "material_slots": [{ "slot": "primary", "editable": true }]
+    }
+  ]
+}

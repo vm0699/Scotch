@@ -355,9 +355,14 @@ export function buildMassingData(project: ArchitectureProject): MassingData {
     }
   }
 
-  // Furniture boxes (show_furniture toggle respected)
+  // Furniture boxes (show_furniture toggle respected).
+  // Phase 43: items with a resolved catalog_id render as real GLB meshes via
+  // <CatalogFurnitureLayer> instead — skip the placeholder box for those so
+  // we don't double-render. Items without catalog_id (legacy / not yet
+  // catalog-matched) keep the box — this IS the graceful fallback.
   if (project.show_furniture) {
     for (const item of project.furniture) {
+      if (item.catalog_id) continue;
       const room = rooms.find((r) => r.id === item.room_id);
       const baseY = room ? room.level * h : 0;
       const fh = item.height;

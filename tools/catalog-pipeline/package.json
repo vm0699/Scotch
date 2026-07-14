@@ -1,0 +1,21 @@
+{
+  "name": "scotch-catalog-pipeline",
+  "private": true,
+  "version": "0.1.0",
+  "description": "One-time / re-runnable build tool: downloads CC0 furniture assets from Poly Haven, normalizes them (recenter, floor-align, weld/dedupe), and emits vendored GLBs + catalog.json consumed by services/api. Not part of the runtime app.",
+  "type": "module",
+  "scripts": {
+    "download": "node download.mjs",
+    "download-kenney": "node download-kenney.mjs",
+    "normalize": "node normalize.mjs",
+    "download-env": "node download-env.mjs",
+    "build": "npm run download && npm run download-kenney && npm run normalize && npm run download-env"
+  },
+  "dependencies": {
+    "@gltf-transform/core": "^4.4.1",
+    "@gltf-transform/extensions": "^4.4.1",
+    "@gltf-transform/functions": "^4.4.1",
+    "meshoptimizer": "^0.22.0",
+    "sharp": "^0.35.3"
+  }
+}

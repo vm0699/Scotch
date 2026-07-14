@@ -334,3 +334,56 @@ See full staged breakdown: **[docs/product/roadmap-phase-28-plus.md](roadmap-pha
 affected-item tracking, and push 2D-first work into render-ready 3D and professional tools.
 `ArchitectureProject` JSON remains the single source of truth; deterministic generation always works
 without an AI key. Build order honors the founder's sequence (29 MEP first).
+
+---
+
+## Phase 43 — Interior Design Studio ✅ Done (12 room types, 30 catalog items, drag/recolor/compression shipped)
+
+Full plan: **[interior-design-studio-plan.md](interior-design-studio-plan.md)**
+
+Prioritizes interior design as a first-class capability: pick one room from an existing floor plan,
+furnish it (deterministic + AI), edit on canvas in 2D and 3D, export. Reuses the existing
+`ArchitectureProject`/`FurnitureItem` model, the Phase 26 deterministic placer, and Phase 31
+`RoomFinish`/BOQ — no new source of truth. Furniture/materials/HDRIs are vendored **CC0** assets
+(Poly Haven), never hand-built. Rendering stays on React Three Fiber (PlayCanvas evaluated and
+rejected — see plan §4.1). **Bedroom is the 100%-working vertical slice**; other room types follow
+as catalog-only additions once the slice is production-grade.
+
+| Stage | Scope | Status |
+|---|---|---|
+| 43.1 Catalog foundation | 15 CC0 bedroom assets (Poly Haven) normalized via gltf-transform to vendored GLBs; `CatalogItem` model (backend+frontend); `GET /catalog`, `GET /catalog/{id}`; static asset serving; `CATALOG_LICENSES.md` | ✅ |
+| 43.2 Room-focused 3D with real meshes | GLB loader/cache in R3F, enter-room camera, HDRI environment, PBR floor/wall from `RoomFinish`, contact shadows | ✅ |
+| 43.3 Generation (deterministic + AI) | `furniture_defaults.py` catalog wiring (bedroom fully catalog-backed); `interior_designer.py` AI proposer via Anthropic + schema repair; door-swing/overlap/bounds validator with self-healing deterministic fallback | ✅ |
+| 43.4 Room-focused editing UX | Click-to-select sync (2D plan ↔ 3D highlight ↔ panel), rotate/swap/delete/add via structured controls, `RoomInterior` stale-tracking on resize/removal, edits tolerant of pre-existing unrelated violations | ✅ |
+| 43.5 Polish, exports & docs | DXF `A-FURN` layer, GLB export (automatic — furniture meshes are real scene objects), studio-grade R3F pipeline (PCSS soft shadows, physical glass, N8AO, bloom, physically-based sky, CAD reference grid), credits link, docs | ✅ |
+| 43.6 Living room | 3 new CC0 items (sofa, coffee table, media console) + 5 reused bedroom items; `living`/`seating` templates catalog-backed | ✅ |
+| 43.7 Kitchen | `cooktop_stove` catalog-linked; counters intentionally stay on the parametric L-counter geometry (not catalog meshes — would double-render); refrigerator has no CC0 source, stays on box fallback | ✅ |
+| 43.8 Foyer | `console_table_classic` catalog-linked; shoe_rack has no CC0 source, stays on box fallback | ✅ |
+| 43.9 Dining room | `dining_table_wood` + `dining_chair_set` (all 6 chair slots) + reused `media_console_wood` as sideboard; chair-around-table placement made catalog-aware (real footprint, no mesh overhang) | ✅ |
+| 43.10 Study/office | `desk_office_metal` + `office_chair_school` + reused `bookshelf_open` | ✅ |
+
+| 43.11 Master bedroom | `king_bed_frame` new; wardrobe/nightstands reused from `bedroom`. `dressing_table` stays un-linked (no CC0 source found) | ✅ |
+| 43.12 Balcony/outdoor | `outdoor_chair_plastic` new; outdoor table reuses `side_table_modern` (Poly Haven's only outdoor table is a 7×10 ft picnic table — doesn't fit a balcony) | ✅ |
+| 43.13 Storage/utility | Reuses `bookshelf_open` — a storage room's shelving is the same object as a bookshelf | ✅ |
+| 43.14 Bathroom fixtures | Poly Haven has **no** bathroom fixtures (confirmed directly via their API) — sourced `toilet`/`bathroomSink`/`bathtub`/`kitchenSink` from **Kenney's Furniture Kit** instead (CC0, same terms), via a new `download-kenney.mjs` extractor. Bathroom/restroom/kitchen sink now fully catalog-backed. | ✅ |
+| 43.15 Remaining gap assets | Searched for refrigerator/dressing table/shoe rack beyond Poly Haven + Kenney; a Quaternius Google Drive link was identified but declined as unverified provenance. Gaps documented, stay on box fallback. | ✅ investigated |
+| 43.16 Material recolor | `material_slots[].editable` flipped to `true`; recolor = a `Material` entry referenced from `FurnitureItem.material_overrides[slot]`, rendered as a multiplicative tint over the baked diffuse texture; color swatch in the Interior Design panel for editable slots | ✅ |
+| 43.17 Freehand drag-with-snap | `FurnitureSymbol` pointer-draggable on the 2D plan — `getScreenCTM()`-based coordinate conversion, 0.25 ft grid snap, committed via the same validated `interior/edit` `move` action as any other edit | ✅ |
+| 43.18 Asset compression: geometry | `normalize.mjs` Meshopt-compresses geometry (`EXT_meshopt_compression`) before writing each GLB; no frontend change needed (drei's `useGLTF()` already defaults to decoding both Draco and Meshopt) | ✅ |
+| 43.19 Asset compression: textures | Added WebP texture compression (`EXT_texture_webp` via `textureCompress({encoder: sharp})`) — textures dominated payload far more than geometry. Combined with 43.18: 36.4 MB → 9.2 MB (~75%) across the 30-item catalog; no frontend change needed (three-stdlib's `GLTFLoader` has built-in `EXT_texture_webp` support) | ✅ |
+| 43.20 Office furniture + placer fix | The café/office building-kind (`floorplan_generator.py`) already produces `type="office"` rooms with no furniture template — added one (repeating desk+chair pairs, meeting table, bookshelf). Surfaced and fixed a real bug: a chair sharing a wall with a desk was silently dropped as overlapping (both boxes start flush at the same wall position) — added `FurnitureSpec.wall_offset` to pull it clear; fixed `study`'s chair too, which had the same latent bug | ✅ |
+| 43.21 Café templates + Add-room gap | Added `cafe_seating` (reuses the dining chair-around-table logic) and `cafe_counter` templates — the two `type=` values the café building-kind produces with no template (kitchen/storage/restroom rooms already reused existing types). Also found the "Add room" dropdown only listed 9 of 19 pipeline-supported room types — added the missing 5 (`master_bedroom`, `seating`, `kitchenette`, `foyer`, `restroom`) | ✅ |
+| 43.22 Bulk furnish-all-rooms | `POST /projects/{id}/interior/generate-all` runs the per-room generator across every room in one action; skips already-furnished rooms unless `overwrite=true`; surfaced as a "Furnish all rooms" card in the Interior Design panel's empty state | ✅ |
+| 43.23 Self-audit: add-room + master bedroom | Background audit found 43.21's dropdown additions (`seating`/`foyer`) weren't in the backend's `VALID_ADD_ROOM_TYPES` (would 422). Fixed, plus found `master_bedroom` was never a reachable room type at all (generator always stores `type="bedroom"`) — added `effective_room_type()` to redirect the first/named-master bedroom to its own template. That surfaced a real latent bug: beds silently vanished in depth-compressed rooms because a fixed clearance requirement hard-rejected them; fixed with graceful clearance degradation in the placer (monotonic improvement, zero regression for rooms that already worked) | ✅ |
+| 43.24 Self-audit: compliance + café/office restroom | Same audit: NBC compliance checks silently skipped every room type added since 43.14; added `restroom` to the min-area table (using the WC-only NBC figure already cited but unused) and `office`/`cafe_seating`/`seating` to the ventilation-habitable set — deliberately did not invent figures for types with no NBC citation. Found café/office restrooms were typed `"bathroom"` instead of `"restroom"` — meant public restrooms got a bathtub/shower and the wrong compliance minimum; fixed both generator call sites plus door/window sizing rules. Added missing export material colors for the 5 newer room types | ✅ |
+
+**30 total catalog items** across 16 room types (bedroom, master_bedroom, living, seating, kitchen,
+kitchenette, dining, study, foyer, balcony, storage, bathroom, restroom, office, cafe_seating,
+cafe_counter). Two catalog sources: Poly Haven (primary) + Kenney (bathroom/kitchen fixtures Poly
+Haven doesn't have). Editing supports move (drag)/rotate/swap/recolor/delete/add, all re-validated on
+every edit; generation supports per-room or bulk-all-rooms. Remaining honest gaps: refrigerator,
+dressing table, shoe rack — no suitable CC0 model found for any of them yet; retail/hospitality room
+types would need a new building-kind (product-scope decision, not attempted).
+
+**Accept (bedroom slice):** prompt → furnished bedroom (real meshes, 2D+3D) → editable on canvas →
+exports → hero render, with a deterministic no-AI-key fallback proven by tests.

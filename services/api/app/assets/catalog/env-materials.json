@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "generated_at": "2026-07-13T13:39:12.960Z",
+  "hdri": {
+    "key": "interior_soft",
+    "label": "White Home Studio",
+    "url": "/catalog-assets/env/interior_soft_1k.hdr",
+    "license": {
+      "source": "Poly Haven",
+      "spdx": "CC0-1.0",
+      "source_url": "https://polyhaven.com/a/white_home_studio"
+    }
+  },
+  "materials": [
+    {
+      "key": "floor",
+      "label": "Light Oak Wood Floor",
+      "repeat_ft": 6,
+      "color_url": "/catalog-assets/materials/floor/color.jpg",
+      "normal_url": "/catalog-assets/materials/floor/normal.jpg",
+      "roughness_url": "/catalog-assets/materials/floor/roughness.jpg",
+      "license": {
+        "source": "ambientCG",
+        "asset_id": "WoodFloor051",
+        "spdx": "CC0-1.0",
+        "source_url": "https://ambientcg.com/a/WoodFloor051"
+      }
+    },
+    {
+      "key": "floor_tile_light",
+      "label": "White Ceramic Tile",
+      "repeat_ft": 2,
+      "color_url": "/catalog-assets/materials/floor_tile_light/color.jpg",
+      "normal_url": "/catalog-assets/materials/floor_tile_light/normal.jpg",
+      "roughness_url": "/catalog-assets/materials/floor_tile_light/roughness.jpg",
+      "license": {
+        "source": "ambientCG",
+        "asset_id": "Tiles133A",
+        "spdx": "CC0-1.0",
+        "source_url": "https://ambientcg.com/a/Tiles133A"
+      }
+    },
+    {
+      "key": "floor_tile_dark",
+      "label": "Black Square Tile",
+      "repeat_ft": 2,
+      "color_url": "/catalog-assets/materials/floor_tile_dark/color.jpg",
+      "normal_url": "/catalog-assets/materials/floor_tile_dark/normal.jpg",
+      "roughness_url": "/catalog-assets/materials/floor_tile_dark/roughness.jpg",
+      "license": {
+        "source": "ambientCG",
+        "asset_id": "Tiles052",
+        "spdx": "CC0-1.0",
+        "source_url": "https://ambientcg.com/a/Tiles052"
+      }
+    },
+    {
+      "key": "floor_marble",
+      "label": "Beige Marble",
+      "repeat_ft": 4,
+      "color_url": "/catalog-assets/materials/floor_marble/color.jpg",
+      "normal_url": "/catalog-assets/materials/floor_marble/normal.jpg",
+      "roughness_url": "/catalog-assets/materials/floor_marble/roughness.jpg",
+      "license": {
+        "source": "ambientCG",
+        "asset_id": "Marble014",
+        "spdx": "CC0-1.0",
+        "source_url": "https://ambientcg.com/a/Marble014"
+      }
+    },
+    {
+      "key": "wall",
+      "label": "White Plaster Wall",
+      "repeat_ft": 8,
+      "color_url": "/catalog-assets/materials/wall/color.jpg",
+      "normal_url": "/catalog-assets/materials/wall/normal.jpg",
+      "roughness_url": "/catalog-assets/materials/wall/roughness.jpg",
+      "license": {
+        "source": "ambientCG",
+        "asset_id": "Plaster004",
+        "spdx": "CC0-1.0",
+        "source_url": "https://ambientcg.com/a/Plaster004"
+      }
+    }
+  ]
+}

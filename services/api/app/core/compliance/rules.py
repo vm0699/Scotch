@@ -39,10 +39,29 @@ _MIN_AREA_FT2: dict[str, tuple[float, str]] = {
     "master_bedroom": (102.3, "102.3 ft² (9.5 m²)"),
     "kitchen":        ( 53.8, " 53.8 ft² (5.0 m²)"),
     "bathroom":       ( 25.0, " 25.0 ft² (2.3 m²)"),
+    # WC-only minimum from the docstring above (1.2 m² ≈ 12.9 ft²) — distinct
+    # from "bathroom"'s combined-bath figure; a "restroom" (Stage 43.14) is a
+    # WC + basin, not a full bath, so it's held to the smaller cited minimum,
+    # not left unchecked entirely.
+    "restroom":       ( 12.9, " 12.9 ft² (1.2 m²)"),
+    # Note: office/cafe_seating/cafe_counter/kitchenette/foyer/seating/storage
+    # are deliberately NOT given a minimum here — NBC Part 4 Section 5 (cited
+    # above) only specifies residential dwelling-unit room areas; inventing a
+    # number for commercial/utility room types without an actual code
+    # citation would present a fabricated figure as if it were regulation,
+    # which this module otherwise takes care to avoid (see the TN advisory's
+    # "placeholder regulation values" disclaimer for the same principle).
 }
 
-# Habitable rooms that require natural ventilation
-_HABITABLE = {"bedroom", "master_bedroom", "living", "dining", "study", "studio"}
+# Habitable rooms that require natural ventilation — i.e. rooms meant for
+# continuous human occupancy, as opposed to circulation/service/storage
+# space. "office" and "cafe_seating" (Stage 43.20/43.21) are people-occupied
+# for extended periods exactly like "study"/"dining" already here; "seating"
+# is a general lounge/den, the residential equivalent of "living". Deliberately
+# NOT included: cafe_counter (staff pass through briefly, not a stay-in-place
+# room), kitchenette/foyer/restroom/storage (excluded for the same reason
+# their full-size counterparts kitchen/bathroom/storage already are).
+_HABITABLE = {"bedroom", "master_bedroom", "living", "dining", "study", "studio", "office", "cafe_seating", "seating"}
 MIN_VENTILATION_RATIO = 1 / 8   # window area / floor area
 
 MIN_STAIR_WIDTH_FT = 2.95       # 0.9 m

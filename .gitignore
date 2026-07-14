@@ -18,6 +18,13 @@ __pycache__/
 services/api/app/data/*
 !services/api/app/data/.gitkeep
 
+# Phase 43 — catalog pipeline intermediate downloads (raw source assets before
+# normalization). The FINAL vendored output in services/api/app/assets/catalog/
+# is committed; these raw caches are not.
+tools/catalog-pipeline/raw/
+tools/catalog-pipeline/raw-env/
+tools/catalog-pipeline/raw-kenney-source/
+
 # OS / editor
 .DS_Store
 Thumbs.db

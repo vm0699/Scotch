@@ -117,14 +117,15 @@ Open **http://localhost:3000**.
 - Status notice banner for generation summaries.
 
 **Centre — Preview:**
-- **2D Plan tab** — architectural SVG: dashed site boundary, poché walls, door swing arcs, window symbols, room labels with area, dimension lines, north arrow. Click a room to select and open an inline CADAM-style edit popover. Zoom in/out/fit controls.
-- **3D Massing tab** — React Three Fiber viewer: walls extruded to floor height, roof slab, ground, door glass insets; OrbitControls; camera preset dropdown (exterior quarter, top ortho, street eye, interior, balcony); GLTF export.
+- **2D Plan tab** — architectural SVG: dashed site boundary, poché walls, door swing arcs, window symbols, room labels with area, dimension lines, north arrow. Click a room to select and open an inline CADAM-style edit popover. Click a furniture item to select it (syncs with the 3D view and the Interior Design panel). Zoom in/out/fit controls.
+- **3D Massing tab** — React Three Fiber viewer: walls extruded to floor height, roof slab, ground, door glass insets; real GLB furniture (Phase 43) with PBR floor/wall materials, a CC0 HDRI, PCSS soft shadows, N8AO ambient occlusion, bloom, physical glass (transmission/IOR), a CAD-style reference grid, and a physically-based sky tied to the sun-study panel; OrbitControls; camera preset dropdown (exterior quarter, top ortho, street eye, interior, balcony) plus a per-room "Enter Room" camera; GLTF export.
 
 **Right — Design Data:**
 - **Selection** — room editor inline (name, width, depth) when a room is selected.
 - **Parameters** — site/building/room parameter table, all editable.
 - **Room Schedule** — all rooms with size, area, built-up total; click row to select on plan.
 - **Intelligence** — area summary, spatial quality checks, optional Vastu Shastra analysis.
+- **Interior Design** (Phase 43) — furnish the selected room with real CC0 furniture: deterministic (no AI key) or AI-proposed layout + style preset; per-item rotate/swap/delete; door-swing/overlap validation; see [docs/integrations/interior-design.md](docs/integrations/interior-design.md).
 - **History** — reverse-chronological version list with colour-coded change-type badge, mini SVG thumbnail, room count/area, restore button (two-step confirm).
 - **Exports** — all formats (see below).
 - **Warnings** — design validation advisories and assumptions.
@@ -138,7 +139,7 @@ Open **http://localhost:3000**.
 | **JSON** | Full `ArchitectureProject` — the universal data model |
 | **SVG** | Layered floor plan (site/rooms/walls/doors/windows/labels/dims) — Illustrator-compatible |
 | **PNG** | Rasterized plan at 2× scale (Pillow) |
-| **DXF** | AutoCAD-ready: layers A-SITE/A-WALL/A-DOOR/A-WINDOW/A-ROOM-TEXT/A-HATCH/A-ANNO/A-DIMS |
+| **DXF** | AutoCAD-ready: layers A-SITE/A-WALL/A-DOOR/A-WINDOW/A-ROOM-TEXT/A-HATCH/A-ANNO/A-DIMS/A-FURN |
 | **SketchUp (.rb)** | Ruby script: hollow rooms, materials by type, door/window voids, roof slab, camera |
 | **Blender (.py)** | Python script: BooleanDifference rooms, Principled BSDF, lights, 5 cameras, EEVEE/Cycles |
 | **Rhino (.py)** | RhinoPython: unit detection, layer setup, BooleanDifference walls/openings, roof |
@@ -320,6 +321,8 @@ npm run lint:web     # ESLint
 | [`docs/integrations/rhino-grasshopper-strategy.md`](docs/integrations/rhino-grasshopper-strategy.md) | Rhino + GH parameter strategy |
 | [`docs/integrations/rendering-workflows.md`](docs/integrations/rendering-workflows.md) | Blender, Lumion, D5, Enscape, V-Ray |
 | [`docs/integrations/presentation-sheets-strategy.md`](docs/integrations/presentation-sheets-strategy.md) | Illustrator / InDesign workflow |
+| [`docs/integrations/interior-design.md`](docs/integrations/interior-design.md) | Interior Design Studio (Phase 43): catalog, generation, editing, exports |
+| [`docs/product/interior-design-studio-plan.md`](docs/product/interior-design-studio-plan.md) | Phase 43 original plan + Planner 5D / asset research |
 
 ---
 

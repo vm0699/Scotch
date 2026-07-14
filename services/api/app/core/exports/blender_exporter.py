@@ -37,16 +37,21 @@ _ROOM_COLOURS: dict[str, tuple[float, float, float]] = {
     "living":         (0.92, 0.88, 0.80),
     "dining":         (0.92, 0.89, 0.82),
     "kitchen":        (0.92, 0.90, 0.84),
+    "kitchenette":    (0.92, 0.90, 0.84),  # same tone as kitchen — same function, smaller room
     "master_bedroom": (0.86, 0.80, 0.78),
     "bedroom":        (0.90, 0.84, 0.82),
     "bathroom":       (0.84, 0.90, 0.92),
+    "restroom":       (0.84, 0.90, 0.92),  # same tone as bathroom — WC+basin without the tub
     "balcony":        (0.86, 0.88, 0.84),
     "parking":        (0.78, 0.78, 0.78),
     "storage":        (0.84, 0.84, 0.82),
     "study":          (0.90, 0.88, 0.84),
+    "office":         (0.90, 0.88, 0.84),  # same tone as study — both are workspace rooms
     "foyer":          (0.88, 0.86, 0.82),
     "corridor":       (0.90, 0.89, 0.86),
     "seating":        (0.92, 0.88, 0.80),
+    "cafe_seating":   (0.92, 0.88, 0.80),  # same tone as seating/living — a café's public seating
+    "cafe_counter":   (0.92, 0.90, 0.84),  # same tone as kitchen — service/prep function
     "service":        (0.84, 0.84, 0.84),
 }
 _DEFAULT_COLOUR = (0.94, 0.93, 0.92)

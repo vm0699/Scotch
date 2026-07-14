@@ -1,3 +1,9 @@
+from app.core.models.catalog import (
+    CatalogItem,
+    CatalogLicense,
+    CatalogManifest,
+    MaterialSlot,
+)
 from app.core.models.project import (
     ACPlan,
     Feasibility,
@@ -40,6 +46,7 @@ from app.core.models.project import (
     RevisionMeta,
     Room,
     RoomFinish,
+    RoomInterior,
     ServicePoint,
     ServiceRoute,
     Site,
@@ -55,6 +62,10 @@ from app.core.models.project import (
 )
 
 __all__ = [
+    "CatalogItem",
+    "CatalogLicense",
+    "CatalogManifest",
+    "MaterialSlot",
     "ACPlan",
     "Feasibility",
     "FeasibilityOption",
@@ -96,6 +107,7 @@ __all__ = [
     "RevisionMeta",
     "Room",
     "RoomFinish",
+    "RoomInterior",
     "ServicePoint",
     "ServiceRoute",
     "Site",

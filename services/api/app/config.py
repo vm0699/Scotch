@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     # Storage: "local" today; cloud backends register in storage/factory.py (Phase 18).
     storage_backend: str = "local"
     data_dir: Path = Path(__file__).resolve().parent / "data"
+    # Phase 43: vendored interior-design furniture catalog (committed to git,
+    # not user data) — models/, thumbnails/, catalog.json live here.
+    catalog_dir: Path = Path(__file__).resolve().parent / "assets" / "catalog"
 
     # ── AI provider settings (Phase 9) ────────────────────────────────────────
     # Generation mode: "deterministic" (no key needed) | "ai" | "hybrid"

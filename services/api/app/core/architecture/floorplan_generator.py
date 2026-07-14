@@ -130,7 +130,7 @@ def _cafe_program(req: DesignRequirements, state: _GenState) -> list[list[_Spec]
         _spec("kitchen", "Kitchen", "kitchen", "cafe_kitchen"),
     ]
     back = [_spec("storage", "Storage", "storage", "storage"),
-            _spec("restroom", "Restroom", "bathroom", "restroom")]
+            _spec("restroom", "Restroom", "restroom", "restroom")]
     return [[seating], service, back]
 
 
@@ -144,7 +144,7 @@ def _office_fallback_program(req: DesignRequirements, state: _GenState) -> list[
     open_d = max(12.0, min(req.site_depth * 0.45, 30.0))
     open_plan = _Spec(id="open-plan", name="Open Workspace", type="office", width=open_w, depth=open_d)
     back = [_spec("storage", "Storage", "storage", "storage"),
-            _spec("restroom", "Restroom", "bathroom", "restroom")]
+            _spec("restroom", "Restroom", "restroom", "restroom")]
     return [[open_plan], back]
 
 
@@ -224,7 +224,7 @@ def _openings(
     for room in rooms:
         # Doors: entrance on the entry room, north (corridor-side) door elsewhere.
         if room.type != "parking":
-            width = 3.5 if room is entry_room else (2.5 if room.type in ("bathroom", "storage") else 3.0)
+            width = 3.5 if room is entry_room else (2.5 if room.type in ("bathroom", "restroom", "storage") else 3.0)
             width = min(width, max(2.0, room.width - 1.0))
             offset = round(max(0.5, (room.width - width) / 2 if room is entry_room else 1.0), 1)
             doors.append(
@@ -240,7 +240,7 @@ def _openings(
         # Windows on exterior walls (site perimeter / rear of the built mass).
         if room.type in ("parking", "storage"):
             continue
-        win_width = 1.5 if room.type == "bathroom" else min(4.0, max(2.0, room.width - 2.0))
+        win_width = 1.5 if room.type in ("bathroom", "restroom") else min(4.0, max(2.0, room.width - 2.0))
         sides: list[tuple[str, float]] = []
         if room.x <= 1e-9:
             sides.append(("west", room.depth))
@@ -251,7 +251,7 @@ def _openings(
         if room.y <= 1e-9 and room is not entry_room:
             sides.append(("north", room.width))
         for side, wall_len in sides[:2]:
-            length = 1.5 if room.type == "bathroom" else min(win_width, max(1.5, wall_len - 2.0))
+            length = 1.5 if room.type in ("bathroom", "restroom") else min(win_width, max(1.5, wall_len - 2.0))
             windows.append(
                 Window(
                     id=f"win-{room.id}-{side}",

@@ -1,0 +1,879 @@
+{
+  "version": 1,
+  "room_type": "bedroom + master bedroom + living room + kitchen + dining + study + foyer + balcony + bathroom",
+  "generated_at": "2026-07-13T17:31:42.241Z",
+  "items": [
+    {
+      "id": "bed_single_frame",
+      "slug": "old_bed_frame",
+      "label": "Single Bed Frame",
+      "category": "bed",
+      "style_tags": [
+        "vintage",
+        "industrial",
+        "traditional"
+      ],
+      "footprint_w": 2.97,
+      "footprint_d": 6.57,
+      "height": 3.94,
+      "mesh_url": "/catalog-assets/models/bed_single_frame.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/bed_single_frame.png",
+      "symbol_id": "bed",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/old_bed_frame",
+        "attribution": null
+      }
+    },
+    {
+      "id": "nightstand_painted",
+      "slug": "painted_wooden_nightstand",
+      "label": "Painted Nightstand",
+      "category": "nightstand",
+      "style_tags": [
+        "classic",
+        "rustic"
+      ],
+      "footprint_w": 1.66,
+      "footprint_d": 1.67,
+      "height": 2.02,
+      "mesh_url": "/catalog-assets/models/nightstand_painted.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/nightstand_painted.png",
+      "symbol_id": "nightstand",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/painted_wooden_nightstand",
+        "attribution": null
+      }
+    },
+    {
+      "id": "nightstand_classic",
+      "slug": "ClassicNightstand_01",
+      "label": "Classic Nightstand",
+      "category": "nightstand",
+      "style_tags": [
+        "classic",
+        "traditional"
+      ],
+      "footprint_w": 1.86,
+      "footprint_d": 1.39,
+      "height": 2.3,
+      "mesh_url": "/catalog-assets/models/nightstand_classic.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/nightstand_classic.png",
+      "symbol_id": "nightstand",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/ClassicNightstand_01",
+        "attribution": null
+      }
+    },
+    {
+      "id": "wardrobe_painted",
+      "slug": "painted_wooden_cabinet",
+      "label": "Painted Wardrobe Cabinet",
+      "category": "wardrobe",
+      "style_tags": [
+        "classic",
+        "rustic"
+      ],
+      "footprint_w": 3.92,
+      "footprint_d": 2.02,
+      "height": 3.88,
+      "mesh_url": "/catalog-assets/models/wardrobe_painted.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/wardrobe_painted.png",
+      "symbol_id": "wardrobe",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/painted_wooden_cabinet",
+        "attribution": null
+      }
+    },
+    {
+      "id": "dresser_vintage",
+      "slug": "vintage_wooden_drawer_01",
+      "label": "Vintage Dresser",
+      "category": "dresser",
+      "style_tags": [
+        "vintage",
+        "traditional"
+      ],
+      "footprint_w": 2.81,
+      "footprint_d": 1.5,
+      "height": 1.79,
+      "mesh_url": "/catalog-assets/models/dresser_vintage.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/dresser_vintage.png",
+      "symbol_id": "dresser",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/vintage_wooden_drawer_01",
+        "attribution": null
+      }
+    },
+    {
+      "id": "armchair_modern",
+      "slug": "modern_arm_chair_01",
+      "label": "Modern Armchair",
+      "category": "chair",
+      "style_tags": [
+        "modern",
+        "minimalist"
+      ],
+      "footprint_w": 2.69,
+      "footprint_d": 3.24,
+      "height": 3.36,
+      "mesh_url": "/catalog-assets/models/armchair_modern.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/armchair_modern.png",
+      "symbol_id": "armchair",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/modern_arm_chair_01",
+        "attribution": null
+      }
+    },
+    {
+      "id": "side_table_modern",
+      "slug": "side_table_01",
+      "label": "Side Table",
+      "category": "side_table",
+      "style_tags": [
+        "modern",
+        "minimalist"
+      ],
+      "footprint_w": 1.8,
+      "footprint_d": 1.48,
+      "height": 1.81,
+      "mesh_url": "/catalog-assets/models/side_table_modern.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/side_table_modern.png",
+      "symbol_id": "side_table",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/side_table_01",
+        "attribution": null
+      }
+    },
+    {
+      "id": "mirror_ornate",
+      "slug": "ornate_mirror_01",
+      "label": "Ornate Wall Mirror",
+      "category": "mirror",
+      "style_tags": [
+        "classic",
+        "traditional"
+      ],
+      "footprint_w": 1.6,
+      "footprint_d": 0.09,
+      "height": 2.44,
+      "mesh_url": "/catalog-assets/models/mirror_ornate.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/mirror_ornate.png",
+      "symbol_id": "mirror",
+      "snap": "wall",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/ornate_mirror_01",
+        "attribution": null
+      }
+    },
+    {
+      "id": "ceiling_lamp_modern",
+      "slug": "modern_ceiling_lamp_01",
+      "label": "Modern Pendant Lamp",
+      "category": "lamp_ceiling",
+      "style_tags": [
+        "modern",
+        "minimalist"
+      ],
+      "footprint_w": 1.42,
+      "footprint_d": 1.42,
+      "height": 3.12,
+      "mesh_url": "/catalog-assets/models/ceiling_lamp_modern.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/ceiling_lamp_modern.png",
+      "symbol_id": "ceiling_lamp",
+      "snap": "ceiling",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/modern_ceiling_lamp_01",
+        "attribution": null
+      }
+    },
+    {
+      "id": "desk_lamp_arm",
+      "slug": "desk_lamp_arm_01",
+      "label": "Articulated Desk Lamp",
+      "category": "lamp_desk",
+      "style_tags": [
+        "modern",
+        "industrial"
+      ],
+      "footprint_w": 2.03,
+      "footprint_d": 1.34,
+      "height": 2.88,
+      "mesh_url": "/catalog-assets/models/desk_lamp_arm.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/desk_lamp_arm.png",
+      "symbol_id": "desk_lamp",
+      "snap": "tabletop",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/desk_lamp_arm_01",
+        "attribution": null
+      }
+    },
+    {
+      "id": "potted_plant_01",
+      "slug": "potted_plant_01",
+      "label": "Potted Plant",
+      "category": "plant",
+      "style_tags": [
+        "modern",
+        "classic",
+        "rustic"
+      ],
+      "footprint_w": 1.93,
+      "footprint_d": 2.09,
+      "height": 4.43,
+      "mesh_url": "/catalog-assets/models/potted_plant_01.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/potted_plant_01.png",
+      "symbol_id": "plant",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/potted_plant_01",
+        "attribution": null
+      }
+    },
+    {
+      "id": "vase_ceramic",
+      "slug": "ceramic_vase_01",
+      "label": "Ceramic Vase",
+      "category": "decor",
+      "style_tags": [
+        "modern",
+        "minimalist"
+      ],
+      "footprint_w": 0.67,
+      "footprint_d": 0.68,
+      "height": 1.32,
+      "mesh_url": "/catalog-assets/models/vase_ceramic.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/vase_ceramic.png",
+      "symbol_id": "vase",
+      "snap": "tabletop",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/ceramic_vase_01",
+        "attribution": null
+      }
+    },
+    {
+      "id": "picture_frame_hanging",
+      "slug": "hanging_picture_frame_01",
+      "label": "Hanging Picture Frame",
+      "category": "wall_art",
+      "style_tags": [
+        "modern",
+        "minimalist"
+      ],
+      "footprint_w": 1.95,
+      "footprint_d": 0.05,
+      "height": 2.76,
+      "mesh_url": "/catalog-assets/models/picture_frame_hanging.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/picture_frame_hanging.png",
+      "symbol_id": "picture_frame",
+      "snap": "wall",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/hanging_picture_frame_01",
+        "attribution": null
+      }
+    },
+    {
+      "id": "bookshelf_open",
+      "slug": "Shelf_01",
+      "label": "Open Bookshelf",
+      "category": "shelving",
+      "style_tags": [
+        "modern",
+        "industrial"
+      ],
+      "footprint_w": 3.29,
+      "footprint_d": 0.84,
+      "height": 6.83,
+      "mesh_url": "/catalog-assets/models/bookshelf_open.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/bookshelf_open.png",
+      "symbol_id": "bookshelf",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/Shelf_01",
+        "attribution": null
+      }
+    },
+    {
+      "id": "ottoman_bench",
+      "slug": "Ottoman_01",
+      "label": "Bed-End Ottoman",
+      "category": "ottoman",
+      "style_tags": [
+        "modern",
+        "minimalist"
+      ],
+      "footprint_w": 2.9,
+      "footprint_d": 2.04,
+      "height": 2.05,
+      "mesh_url": "/catalog-assets/models/ottoman_bench.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/ottoman_bench.png",
+      "symbol_id": "ottoman",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/Ottoman_01",
+        "attribution": null
+      }
+    },
+    {
+      "id": "sofa_leather",
+      "slug": "sofa_02",
+      "label": "Leather Sofa",
+      "category": "sofa",
+      "style_tags": [
+        "modern",
+        "classic"
+      ],
+      "footprint_w": 5.93,
+      "footprint_d": 2.68,
+      "height": 2.33,
+      "mesh_url": "/catalog-assets/models/sofa_leather.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/sofa_leather.png",
+      "symbol_id": "sofa",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/sofa_02",
+        "attribution": null
+      }
+    },
+    {
+      "id": "coffee_table_modern",
+      "slug": "modern_coffee_table_01",
+      "label": "Modern Coffee Table",
+      "category": "coffee_table",
+      "style_tags": [
+        "modern",
+        "minimalist"
+      ],
+      "footprint_w": 3.94,
+      "footprint_d": 1.97,
+      "height": 1.28,
+      "mesh_url": "/catalog-assets/models/coffee_table_modern.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/coffee_table_modern.png",
+      "symbol_id": "coffee_table",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/modern_coffee_table_01",
+        "attribution": null
+      }
+    },
+    {
+      "id": "media_console_wood",
+      "slug": "WoodenTable_03",
+      "label": "Wooden Media Console",
+      "category": "tv_unit",
+      "style_tags": [
+        "vintage",
+        "rustic"
+      ],
+      "footprint_w": 4.35,
+      "footprint_d": 1.84,
+      "height": 2.72,
+      "mesh_url": "/catalog-assets/models/media_console_wood.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/media_console_wood.png",
+      "symbol_id": "tv_unit",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/WoodenTable_03",
+        "attribution": null
+      }
+    },
+    {
+      "id": "cooktop_stove",
+      "slug": "electric_stove",
+      "label": "Electric Stove",
+      "category": "cooktop",
+      "style_tags": [
+        "modern",
+        "industrial"
+      ],
+      "footprint_w": 1.65,
+      "footprint_d": 2.12,
+      "height": 2.82,
+      "mesh_url": "/catalog-assets/models/cooktop_stove.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/cooktop_stove.png",
+      "symbol_id": "cooktop",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/electric_stove",
+        "attribution": null
+      }
+    },
+    {
+      "id": "console_table_classic",
+      "slug": "ClassicConsole_01",
+      "label": "Classic Console Table",
+      "category": "console_table",
+      "style_tags": [
+        "classic",
+        "vintage"
+      ],
+      "footprint_w": 5.06,
+      "footprint_d": 1.93,
+      "height": 3.11,
+      "mesh_url": "/catalog-assets/models/console_table_classic.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/console_table_classic.png",
+      "symbol_id": "console_table",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/ClassicConsole_01",
+        "attribution": null
+      }
+    },
+    {
+      "id": "dining_table_wood",
+      "slug": "dining_table",
+      "label": "Dining Table",
+      "category": "dining_table",
+      "style_tags": [
+        "rustic",
+        "classic"
+      ],
+      "footprint_w": 7.4,
+      "footprint_d": 4.56,
+      "height": 2.88,
+      "mesh_url": "/catalog-assets/models/dining_table_wood.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/dining_table_wood.png",
+      "symbol_id": "dining_table",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/dining_table",
+        "attribution": null
+      }
+    },
+    {
+      "id": "dining_chair_set",
+      "slug": "dining_chair_02",
+      "label": "Dining Chair",
+      "category": "dining_chair",
+      "style_tags": [
+        "modern",
+        "classic"
+      ],
+      "footprint_w": 1.42,
+      "footprint_d": 1.89,
+      "height": 3.19,
+      "mesh_url": "/catalog-assets/models/dining_chair_set.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/dining_chair_set.png",
+      "symbol_id": "dining_chair",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/dining_chair_02",
+        "attribution": null
+      }
+    },
+    {
+      "id": "desk_office_metal",
+      "slug": "metal_office_desk",
+      "label": "Metal Office Desk",
+      "category": "desk",
+      "style_tags": [
+        "modern",
+        "industrial"
+      ],
+      "footprint_w": 6.56,
+      "footprint_d": 3.11,
+      "height": 2.58,
+      "mesh_url": "/catalog-assets/models/desk_office_metal.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/desk_office_metal.png",
+      "symbol_id": "desk",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/metal_office_desk",
+        "attribution": null
+      }
+    },
+    {
+      "id": "office_chair_school",
+      "slug": "SchoolChair_01",
+      "label": "Office Chair",
+      "category": "office_chair",
+      "style_tags": [
+        "classic",
+        "industrial"
+      ],
+      "footprint_w": 1.86,
+      "footprint_d": 2.22,
+      "height": 3.3,
+      "mesh_url": "/catalog-assets/models/office_chair_school.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/office_chair_school.png",
+      "symbol_id": "office_chair",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/SchoolChair_01",
+        "attribution": null
+      }
+    },
+    {
+      "id": "king_bed_frame",
+      "slug": "GothicBed_01",
+      "label": "King Bed Frame",
+      "category": "bed",
+      "style_tags": [
+        "classic",
+        "traditional"
+      ],
+      "footprint_w": 4.9,
+      "footprint_d": 6.69,
+      "height": 5.03,
+      "mesh_url": "/catalog-assets/models/king_bed_frame.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/king_bed_frame.png",
+      "symbol_id": "bed",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/GothicBed_01",
+        "attribution": null
+      }
+    },
+    {
+      "id": "outdoor_chair_plastic",
+      "slug": "plastic_monobloc_chair_01",
+      "label": "Outdoor Chair",
+      "category": "outdoor_chair",
+      "style_tags": [
+        "modern",
+        "minimalist"
+      ],
+      "footprint_w": 2.11,
+      "footprint_d": 2.06,
+      "height": 2.89,
+      "mesh_url": "/catalog-assets/models/outdoor_chair_plastic.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/outdoor_chair_plastic.png",
+      "symbol_id": "outdoor_chair",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Poly Haven",
+        "spdx": "CC0-1.0",
+        "source_url": "https://polyhaven.com/a/plastic_monobloc_chair_01",
+        "attribution": null
+      }
+    },
+    {
+      "id": "toilet_standard",
+      "slug": "toilet_standard",
+      "label": "Toilet",
+      "category": "wc",
+      "style_tags": [
+        "modern",
+        "minimalist"
+      ],
+      "footprint_w": 1.03,
+      "footprint_d": 1.57,
+      "height": 1.48,
+      "mesh_url": "/catalog-assets/models/toilet_standard.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/toilet_standard.png",
+      "symbol_id": "wc",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Kenney (Furniture Kit)",
+        "spdx": "CC0-1.0",
+        "source_url": "https://kenney.nl/assets/furniture-kit",
+        "attribution": null
+      }
+    },
+    {
+      "id": "bathroom_sink",
+      "slug": "bathroom_sink",
+      "label": "Bathroom Sink",
+      "category": "basin",
+      "style_tags": [
+        "modern",
+        "minimalist"
+      ],
+      "footprint_w": 1.12,
+      "footprint_d": 0.95,
+      "height": 1.84,
+      "mesh_url": "/catalog-assets/models/bathroom_sink.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/bathroom_sink.png",
+      "symbol_id": "basin",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Kenney (Furniture Kit)",
+        "spdx": "CC0-1.0",
+        "source_url": "https://kenney.nl/assets/furniture-kit",
+        "attribution": null
+      }
+    },
+    {
+      "id": "bathtub_standard",
+      "slug": "bathtub_standard",
+      "label": "Bathtub",
+      "category": "bathtub",
+      "style_tags": [
+        "modern",
+        "minimalist"
+      ],
+      "footprint_w": 3.9,
+      "footprint_d": 1.84,
+      "height": 1.38,
+      "mesh_url": "/catalog-assets/models/bathtub_standard.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/bathtub_standard.png",
+      "symbol_id": "shower",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Kenney (Furniture Kit)",
+        "spdx": "CC0-1.0",
+        "source_url": "https://kenney.nl/assets/furniture-kit",
+        "attribution": null
+      }
+    },
+    {
+      "id": "kitchen_sink_unit",
+      "slug": "kitchen_sink_unit",
+      "label": "Kitchen Sink Unit",
+      "category": "sink",
+      "style_tags": [
+        "modern",
+        "minimalist"
+      ],
+      "footprint_w": 1.41,
+      "footprint_d": 1.48,
+      "height": 1.61,
+      "mesh_url": "/catalog-assets/models/kitchen_sink_unit.glb",
+      "thumbnail_url": "/catalog-assets/thumbnails/kitchen_sink_unit.png",
+      "symbol_id": "counter",
+      "snap": "floor",
+      "material_slots": [
+        {
+          "slot": "primary",
+          "editable": true
+        }
+      ],
+      "license": {
+        "source": "Kenney (Furniture Kit)",
+        "spdx": "CC0-1.0",
+        "source_url": "https://kenney.nl/assets/furniture-kit",
+        "attribution": null
+      }
+    }
+  ]
+}

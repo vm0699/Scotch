@@ -422,6 +422,90 @@ export function getCameras(
   return apiGet(`/projects/${projectId}/cameras`, { signal });
 }
 
+// ── Interior furniture catalog (Phase 43) ─────────────────────────────────────
+
+export type CatalogItem = import("@/features/project/types").CatalogItem;
+
+/** mesh_url / thumbnail_url from CatalogItem are API-relative — resolve before fetching/loading. */
+export function resolveCatalogAssetUrl(relativeUrl: string): string {
+  return `${API_BASE_URL}${relativeUrl}`;
+}
+
+export function getCatalog(
+  filters?: { category?: string; style?: string },
+  signal?: AbortSignal,
+): Promise<CatalogItem[]> {
+  const params = new URLSearchParams();
+  if (filters?.category) params.set("category", filters.category);
+  if (filters?.style) params.set("style", filters.style);
+  const qs = params.toString();
+  return apiGet<CatalogItem[]>(`/catalog${qs ? `?${qs}` : ""}`, { signal });
+}
+
+export function getCatalogItem(catalogId: string, signal?: AbortSignal): Promise<CatalogItem> {
+  return apiGet<CatalogItem>(`/catalog/${catalogId}`, { signal });
+}
+
+// ── Interior generation / editing (Phase 43 Stage 43.3–43.4) ──────────────────
+
+export type RoomInterior = import("@/features/project/types").RoomInterior;
+
+export interface InteriorResponse {
+  room_id: string;
+  furniture: import("@/features/project/types").FurnitureItem[];
+  warnings: string[];
+  room_interior: RoomInterior;
+  project: ArchitectureProject;
+}
+
+export function generateInterior(
+  projectId: string,
+  roomId: string,
+  req: { mode?: "deterministic" | "ai" | "hybrid"; style?: string; prompt?: string } = {},
+): Promise<InteriorResponse> {
+  return apiRequest<InteriorResponse>("POST", `/projects/${projectId}/rooms/${roomId}/interior/generate`, req);
+}
+
+export function getInterior(projectId: string, roomId: string, signal?: AbortSignal): Promise<InteriorResponse> {
+  return apiGet<InteriorResponse>(`/projects/${projectId}/rooms/${roomId}/interior`, { signal });
+}
+
+export type InteriorEditAction =
+  | { action: "move"; item_id: string; x: number; y: number }
+  | { action: "rotate"; item_id: string; rotation: 0 | 90 | 180 | 270 }
+  | { action: "delete"; item_id: string }
+  | { action: "swap"; item_id: string; catalog_id: string }
+  | { action: "add"; catalog_id: string; x: number; y: number; rotation?: 0 | 90 | 180 | 270 }
+  | { action: "recolor"; item_id: string; color: string; slot?: string };
+
+export function editInterior(
+  projectId: string,
+  roomId: string,
+  edit: InteriorEditAction,
+): Promise<InteriorResponse> {
+  return apiRequest<InteriorResponse>("POST", `/projects/${projectId}/rooms/${roomId}/interior/edit`, edit);
+}
+
+export interface RoomInteriorResult {
+  room_id: string;
+  room_name: string;
+  status: "designed" | "skipped" | "empty_template";
+  item_count: number;
+  warnings: string[];
+}
+
+export interface InteriorGenerateAllResponse {
+  results: RoomInteriorResult[];
+  project: ArchitectureProject;
+}
+
+export function generateAllInteriors(
+  projectId: string,
+  req: { mode?: "deterministic" | "ai" | "hybrid"; style?: string; overwrite?: boolean } = {},
+): Promise<InteriorGenerateAllResponse> {
+  return apiRequest<InteriorGenerateAllResponse>("POST", `/projects/${projectId}/interior/generate-all`, req);
+}
+
 // ── Version history (Phase 19) ────────────────────────────────────────────────
 
 export type { ProjectVersionMeta, ProjectVersion, VersionChangeType } from "@/features/project/types";

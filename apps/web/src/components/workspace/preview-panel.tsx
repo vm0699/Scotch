@@ -166,6 +166,9 @@ export function PreviewPanel({
   selectedMepPointId,
   onSelectMepPoint,
   onToggleMepLayer,
+  selectedFurnitureId,
+  onSelectFurniture,
+  onMoveFurniture,
 }: {
   project: ArchitectureProject | null;
   projectId?: string;
@@ -179,6 +182,11 @@ export function PreviewPanel({
   selectedMepPointId?: string | null;
   onSelectMepPoint?: (id: string) => void;
   onToggleMepLayer?: (system: MEPSystem) => void;
+  /** Selected furniture item (Phase 43 — click-to-select interior editing). */
+  selectedFurnitureId?: string | null;
+  onSelectFurniture?: (id: string | null) => void;
+  /** Stage 43.17 — freehand drag-with-snap; supplying this enables dragging. */
+  onMoveFurniture?: (id: string, x: number, y: number) => void;
 }) {
   const [view, setView] = useState<ViewMode>("2d");
   const [zoom, setZoom] = useState(1);
@@ -424,6 +432,9 @@ export function PreviewPanel({
                   activeMepLayers={activeMepLayers}
                   selectedMepPointId={selectedMepPointId}
                   onSelectMepPoint={onSelectMepPoint}
+                  selectedFurnitureId={selectedFurnitureId}
+                  onSelectFurniture={onSelectFurniture}
+                  onMoveFurniture={onMoveFurniture}
                 />
                 {/* Phase 39 — reference image overlay */}
                 {projectId && (
@@ -452,6 +463,7 @@ export function PreviewPanel({
                 project={project}
                 projectId={view === "3d" ? projectId : undefined}
                 onCaptureReady={(fn) => { captureRef.current = fn; }}
+                selectedFurnitureId={selectedFurnitureId}
               />
             </div>
           ) : (

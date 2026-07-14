@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
-from app.api.routes import boq, cameras, changes, chat, compliance, details, exports, feasibility, fixtures, generate, health, intelligence, integrations, mep, profile, program, projects, references, render, review, sync, system, versions
+from app.api.routes import boq, cameras, catalog, changes, chat, compliance, details, exports, feasibility, fixtures, generate, health, intelligence, integrations, interior, mep, profile, program, projects, references, render, review, sync, system, versions
 from app.api.routes import settings as settings_routes
 from app.config import get_settings
 
@@ -22,7 +23,16 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Phase 43: vendored interior furniture catalog (CC0 GLBs + thumbnails).
+    app.mount(
+        "/catalog-assets",
+        StaticFiles(directory=cfg.catalog_dir, check_dir=False),
+        name="catalog-assets",
+    )
+
     app.include_router(health.router)
+    app.include_router(catalog.router)
+    app.include_router(interior.router)
     app.include_router(projects.router)
     app.include_router(generate.router)
     app.include_router(exports.router)

@@ -17,6 +17,8 @@ ROOM_DEFAULTS: dict[str, tuple[float, float]] = {
     "study": (8, 10),
     "storage": (5, 6),
     "studio_room": (14, 16),
+    "seating": (10, 12),
+    "foyer": (6, 6),
     # Cafe program (seating is sized to the site by the generator).
     "cafe_counter": (8, 10),
     "cafe_kitchen": (8, 10),

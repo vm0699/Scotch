@@ -153,4 +153,5 @@ export const MOCK_ARCHITECTURE_PROJECT: ArchitectureProject = {
     generated: false,
     road_width_ft: 0,
   },
+  room_interiors: [],
 };

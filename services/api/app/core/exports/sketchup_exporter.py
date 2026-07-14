@@ -33,16 +33,21 @@ _ROOM_COLOURS: dict[str, tuple[int, int, int]] = {
     "living":         (235, 225, 205),
     "dining":         (235, 228, 210),
     "kitchen":        (235, 230, 215),
+    "kitchenette":    (235, 230, 215),  # same tone as kitchen — same function, smaller room
     "master_bedroom": (220, 205, 200),
     "bedroom":        (230, 215, 210),
     "bathroom":       (215, 230, 235),
+    "restroom":       (215, 230, 235),  # same tone as bathroom — WC+basin without the tub
     "balcony":        (220, 225, 215),
     "parking":        (200, 200, 200),
     "storage":        (215, 215, 210),
     "study":          (230, 225, 215),
+    "office":         (230, 225, 215),  # same tone as study — both are workspace rooms
     "foyer":          (225, 220, 210),
     "corridor":       (230, 228, 220),
     "seating":        (235, 225, 205),
+    "cafe_seating":   (235, 225, 205),  # same tone as seating/living — a café's public seating
+    "cafe_counter":   (235, 230, 215),  # same tone as kitchen — service/prep function
     "service":        (215, 215, 215),
 }
 _DEFAULT_COLOUR = (240, 238, 235)

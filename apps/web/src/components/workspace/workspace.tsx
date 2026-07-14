@@ -12,9 +12,12 @@ import {
   API_BASE_URL,
   ApiError,
   deleteDetail,
+  editInterior,
   editRate,
+  generateAllInteriors,
   generateDetail,
   generateFromPrompt,
+  generateInterior,
   generateMep,
   generateOptions,
   getGenerationSettings,
@@ -22,12 +25,13 @@ import {
   regenerateProject,
   updateProject,
   type DetailType,
+  type InteriorEditAction,
   type MEPSystem,
   type ParameterChange,
   type StoredProject,
 } from "@/features/api/client";
 import { MOCK_ARCHITECTURE_PROJECT } from "@/features/project/mock-architecture-project";
-import type { ArchitectureProject, DesignOption } from "@/features/project/types";
+import type { ArchitectureProject, DesignOption, InteriorGenerationMode } from "@/features/project/types";
 import { PROJECT_TEMPLATES } from "@/features/templates/templates";
 
 type GenerationMode = "deterministic" | "ai" | "hybrid";
@@ -82,6 +86,10 @@ export function Workspace({
 
   // Phase 31: BOQ state
   const [boqCalculating, setBoqCalculating] = useState(false);
+
+  // Phase 43: Interior Design Studio state
+  const [selectedFurnitureId, setSelectedFurnitureId] = useState<string | null>(null);
+  const [interiorBusy, setInteriorBusy] = useState(false);
 
   useEffect(() => {
     getGenerationSettings()
@@ -236,6 +244,84 @@ export function Workspace({
         toast.error("MEP generation failed — ensure a project is generated first.");
       } finally {
         setMepGenerating(false);
+      }
+    },
+    [storedId],
+  );
+
+  // Phase 43: generate/edit a room's interior
+  const handleGenerateInterior = useCallback(
+    async (roomId: string, opts: { mode: InteriorGenerationMode; style: string }) => {
+      if (!storedId) {
+        toast.error("Save the project first before designing an interior.");
+        return;
+      }
+      setInteriorBusy(true);
+      try {
+        const result = await generateInterior(storedId, roomId, opts);
+        setProject(result.project);
+        setHistoryKey((k) => k + 1);
+        if (result.warnings.length > 0) {
+          toast.warning(`Interior generated — ${result.warnings.length} warning(s). See panel for details.`);
+        } else {
+          toast.success("Interior generated.");
+        }
+      } catch {
+        toast.error("Interior generation failed.");
+      } finally {
+        setInteriorBusy(false);
+      }
+    },
+    [storedId],
+  );
+
+  const handleEditInterior = useCallback(
+    async (roomId: string, edit: InteriorEditAction) => {
+      if (!storedId) return;
+      setInteriorBusy(true);
+      try {
+        const result = await editInterior(storedId, roomId, edit);
+        setProject(result.project);
+        if (edit.action === "delete" && selectedFurnitureId === edit.item_id) {
+          setSelectedFurnitureId(null);
+        }
+      } catch (err) {
+        const message = err instanceof ApiError ? err.message : "Edit rejected — it would break the room.";
+        toast.error(message);
+      } finally {
+        setInteriorBusy(false);
+      }
+    },
+    [storedId, selectedFurnitureId],
+  );
+
+  const handleGenerateAllInteriors = useCallback(
+    async (opts: { mode: InteriorGenerationMode; style: string; overwrite: boolean }) => {
+      if (!storedId) {
+        toast.error("Save the project first before designing interiors.");
+        return;
+      }
+      setInteriorBusy(true);
+      try {
+        const result = await generateAllInteriors(storedId, opts);
+        setProject(result.project);
+        setHistoryKey((k) => k + 1);
+        const designed = result.results.filter((r) => r.status === "designed");
+        const skipped = result.results.filter((r) => r.status === "skipped").length;
+        const totalWarnings = designed.reduce((n, r) => n + r.warnings.length, 0);
+        if (designed.length === 0) {
+          toast.info(skipped > 0 ? "All rooms already furnished." : "No room types matched a furniture template.");
+        } else {
+          toast.success(
+            `Furnished ${designed.length} room(s)` +
+              (skipped > 0 ? `, skipped ${skipped} already-furnished` : "") +
+              (totalWarnings > 0 ? ` — ${totalWarnings} warning(s), see panel.` : "."),
+          );
+        }
+      } catch {
+        toast.error("Bulk interior generation failed.");
+      } finally {
+        setInteriorBusy(false);
       }
     },
     [storedId],
@@ -445,6 +531,13 @@ export function Workspace({
             selectedMepPointId={selectedMepPointId}
             onSelectMepPoint={setSelectedMepPointId}
             onToggleMepLayer={handleToggleMepLayer}
+            selectedFurnitureId={selectedFurnitureId}
+            onSelectFurniture={setSelectedFurnitureId}
+            onMoveFurniture={(itemId, x, y) => {
+              const item = project?.furniture.find((f) => f.id === itemId);
+              if (!item) return;
+              void handleEditInterior(item.room_id, { action: "move", item_id: itemId, x, y });
+            }}
           />
           <ChatPanel
             projectId={storedId}
@@ -476,6 +569,12 @@ export function Workspace({
         onEditRate={handleEditRate}
         onEditTileSpec={handleEditTileSpec}
         boqCalculating={boqCalculating}
+        selectedFurnitureId={selectedFurnitureId}
+        onSelectFurniture={setSelectedFurnitureId}
+        onGenerateInterior={(roomId, opts) => void handleGenerateInterior(roomId, opts)}
+        onEditInterior={(roomId, edit) => void handleEditInterior(roomId, edit)}
+        onGenerateAllInteriors={(opts) => void handleGenerateAllInteriors(opts)}
+        interiorBusy={interiorBusy}
       />
     </div>
   );

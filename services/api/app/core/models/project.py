@@ -147,6 +147,14 @@ class FurnitureItem(BaseModel):
     depth: float = Field(gt=0)
     rotation: int = Field(default=0, description="Symbol rotation: 0 | 90 | 180 | 270")
     height: float = Field(default=2.5, gt=0, description="3D height in project units")
+    # ── Phase 43: catalog-backed interior furniture ──────────────────────────
+    catalog_id: str | None = Field(
+        default=None, description="Links to a CatalogItem (real GLB mesh); None = legacy box render"
+    )
+    material_overrides: dict[str, str] = Field(
+        default_factory=dict, description="material_slot -> Material.id, for recolor/retexture"
+    )
+    z: float = Field(default=0.0, ge=0, description="Height off floor in project units (wall/ceiling/tabletop items)")
 
 
 # ── Phase 29: Dimension entities ─────────────────────────────────────────────
@@ -372,6 +380,21 @@ class RoomFinish(BaseModel):
     wall_tile_spec_id: str | None = None
 
 
+# ── Phase 43: Interior Design Studio ─────────────────────────────────────────
+
+
+class RoomInterior(BaseModel):
+    """Per-room interior-furnishing status. One entry per room that has ever
+    been furnished through /interior/generate — absent = never furnished."""
+
+    room_id: str
+    status: str = Field(default="empty", description='"empty" | "designed" | "stale"')
+    style: str = ""
+    mode: str = Field(default="deterministic", description='"deterministic" | "ai" | "hybrid"')
+    last_generated_at: str = ""
+    warnings: list[str] = Field(default_factory=list)
+
+
 class RateEntry(BaseModel):
     category: str
     item: str
@@ -550,6 +573,8 @@ class ArchitectureProject(BaseModel):
     revision_meta: "RevisionMeta" = Field(default_factory=lambda: _default_revision_meta())
     # Phase 40 additions — feasibility / yield
     feasibility: "Feasibility" = Field(default_factory=Feasibility)
+    # Phase 43 additions — interior design studio (per-room furnishing status)
+    room_interiors: list[RoomInterior] = []
 
 
 class ExportManifest(BaseModel):

@@ -25,7 +25,7 @@ import ezdxf
 from ezdxf import units
 from ezdxf.enums import TextEntityAlignment
 
-from app.core.models import ArchitectureProject, Door, Room, Window
+from app.core.models import ArchitectureProject, Door, FurnitureItem, Room, Window
 
 WALL_T = 0.5  # ft
 
@@ -39,7 +39,10 @@ LAYERS = [
     ("A-DIMS",      8,  0.18),
     ("A-ANNO",      6,  0.13),
     ("A-TITLE",     7,  0.25),
+    ("A-FURN",      2,  0.13),  # Phase 43 — interior furniture footprints
 ]
+
+FURN_TEXT_H = 0.7  # ft
 
 DIM_TEXT_H = 1.2   # dimension text height (ft)
 ANNO_TEXT_H = 1.0  # annotation text height (ft)
@@ -162,6 +165,29 @@ def _add_room_text(msp, room: Room, depth: float, unit: str) -> None:
             "attachment_point": 5,
         },
     )
+
+
+def _add_furniture(msp, item: FurnitureItem, depth: float) -> None:
+    """Furniture footprint as a rectangle on A-FURN. x/y/width/depth are
+    already the placed, post-rotation AABB (same convention the 2D SVG plan
+    symbols use), so a plain axis-aligned rectangle is correct here too —
+    no rotation transform needed."""
+    x0, x1 = item.x, item.x + item.width
+    y0, y1 = _fy(item.y, depth), _fy(item.y + item.depth, depth)
+    pts = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+    msp.add_lwpolyline(pts, close=True, dxfattribs={"layer": "A-FURN"})
+
+    label = item.label or item.type
+    if label:
+        msp.add_mtext(
+            label,
+            dxfattribs={
+                "layer": "A-FURN",
+                "insert": (item.x + item.width / 2, (y0 + y1) / 2),
+                "char_height": FURN_TEXT_H,
+                "attachment_point": 5,
+            },
+        )
 
 
 def _add_room_dims(msp, room: Room, depth: float) -> None:
@@ -376,6 +402,12 @@ def export_dxf(project: ArchitectureProject, output_path: Path) -> bytes:
 
     # Call-out tags
     _add_opening_tags(msp, project.doors, project.windows, rooms_by_id, depth)
+
+    # Phase 43 — furniture footprints (A-FURN), respecting the same
+    # show_furniture toggle the 2D/3D viewers use.
+    if project.show_furniture:
+        for item in project.furniture:
+            _add_furniture(msp, item, depth)
 
     # Site dimensions
     _add_site_dims(msp, site.width, depth)
