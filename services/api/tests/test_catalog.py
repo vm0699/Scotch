@@ -27,7 +27,7 @@ client = TestClient(app)
 
 def test_load_catalog_has_bedroom_items() -> None:
     manifest = load_catalog()
-    assert manifest.room_type == "bedroom"
+    assert "bedroom" in manifest.room_type
     assert len(manifest.items) >= 15
 
 
@@ -100,12 +100,16 @@ GLB_MAGIC = b"glTF"
 
 
 def test_all_catalog_meshes_serve_valid_glb_bytes() -> None:
+    # Threshold is 2 KB, not 10 KB — Stage 43.18/43.19 added Meshopt geometry
+    # + WebP texture compression, and simple low-poly Kenney fixtures (WC,
+    # basin, tub) legitimately compress down to ~7-10 KB now. This still
+    # catches genuine corruption (an empty or near-empty response).
     manifest = load_catalog()
     for item in manifest.items:
         response = client.get(item.mesh_url)
         assert response.status_code == 200, f"{item.id}: {item.mesh_url} did not serve"
         assert response.content[:4] == GLB_MAGIC, f"{item.id}: not a valid GLB (bad magic header)"
-        assert len(response.content) > 10_000, f"{item.id}: suspiciously small GLB ({len(response.content)} bytes)"
+        assert len(response.content) > 2_000, f"{item.id}: suspiciously small GLB ({len(response.content)} bytes)"
 
 
 def test_all_catalog_thumbnails_serve() -> None:

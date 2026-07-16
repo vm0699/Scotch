@@ -453,6 +453,7 @@ You help architects and clients by:
 - Personalising designs via client brief (budget, vastu, family size) and user profile
 - Generating render prompts for Midjourney / Stable Diffusion / Blender
 - Exporting to SVG, DXF, PNG, IFC, SketchUp, Blender, Rhino, PDF sheets
+- Reading attached reference images (sketches, site photos, inspiration) the user uploads in chat and using them to inform generation or edits
 
 Design rules you always follow:
 - Bedrooms ≥ 10×10 ft, bathrooms ≥ 5×5 ft, kitchens ≥ 8×8 ft, living rooms ≥ 12×12 ft
@@ -471,9 +472,15 @@ class ChatMessage(BaseModel):
     content: str
 
 
+class ChatImage(BaseModel):
+    media_type: str  # e.g. "image/png", "image/jpeg"
+    data: str  # base64-encoded image bytes, no "data:" prefix
+
+
 class ChatRequest(BaseModel):
     message: str
     history: list[ChatMessage] = []
+    images: list[ChatImage] = []
 
 
 class ChatResponse(BaseModel):
@@ -665,7 +672,18 @@ def _run_anthropic_loop(project_id: str, req: ChatRequest) -> ChatResponse:
     messages: list[dict] = [
         {"role": m.role, "content": m.content} for m in req.history
     ]
-    messages.append({"role": "user", "content": req.message})
+    if req.images:
+        content: list[dict] = [
+            {
+                "type": "image",
+                "source": {"type": "base64", "media_type": img.media_type, "data": img.data},
+            }
+            for img in req.images
+        ]
+        content.append({"type": "text", "text": req.message})
+        messages.append({"role": "user", "content": content})
+    else:
+        messages.append({"role": "user", "content": req.message})
 
     final_reply = ""
     tool_calls: list[str] = []
@@ -1291,6 +1309,12 @@ def _run_deterministic_fallback(project_id: str, req: ChatRequest) -> ChatRespon
             "• **QA checklist** — 'run QA checklist' or 'is this design production ready?'\n"
             "• **Review issues** — 'add review issue: ...' or 'list review issues'\n\n"
             "Configure ANTHROPIC_API_KEY for full natural-language understanding."
+        )
+
+    if req.images and reply:
+        reply += (
+            f"\n\n(Note: {len(req.images)} image(s) attached — image analysis needs an "
+            "AI mode; configure ANTHROPIC_API_KEY to have Claude look at them.)"
         )
 
     return ChatResponse(

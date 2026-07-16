@@ -1,0 +1,17 @@
+{
+  "id": "ref-0e91e2bf4a84",
+  "project_id": "proj-3bb29663d5ff",
+  "file_name": "t.png",
+  "file_path": "ref-0e91e2bf4a84_t.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 58,
+  "reference_type": "reference_image",
+  "scale_status": "uncalibrated",
+  "calibration": null,
+  "extracted_entities": [],
+  "needs_review": true,
+  "linked_project_objects": [],
+  "notes": "",
+  "created_at": "2026-07-13T09:44:36.460769Z",
+  "updated_at": "2026-07-13T09:44:36.460771Z"
+}

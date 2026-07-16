@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "room_type": "bedroom + master bedroom + living room + kitchen + dining + study + foyer + balcony + bathroom",
-  "generated_at": "2026-07-13T17:31:42.241Z",
+  "room_type": "bedroom + master bedroom + living room + seating + kitchen + kitchenette + dining + study + foyer + balcony + storage + bathroom + restroom + office + cafe seating + cafe counter",
+  "generated_at": "2026-07-14T16:08:02.544Z",
   "items": [
     {
       "id": "bed_single_frame",

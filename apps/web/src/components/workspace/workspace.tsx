@@ -1,19 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { ChatPanel } from "@/components/workspace/chat-panel";
 import { DataPanel } from "@/components/workspace/data-panel";
 import { OptionsPanel } from "@/components/workspace/options-panel";
 import { PreviewPanel } from "@/components/workspace/preview-panel";
-import { PromptPanel } from "@/components/workspace/prompt-panel";
 import {
   API_BASE_URL,
   ApiError,
+  createProject,
   deleteDetail,
   editInterior,
   editRate,
+  fileToChatImage,
   generateAllInteriors,
   generateDetail,
   generateFromPrompt,
@@ -23,7 +24,10 @@ import {
   getGenerationSettings,
   getProject,
   regenerateProject,
+  sendChatMessage,
   updateProject,
+  uploadReference,
+  type ChatMessage,
   type DetailType,
   type InteriorEditAction,
   type MEPSystem,
@@ -36,8 +40,6 @@ import { PROJECT_TEMPLATES } from "@/features/templates/templates";
 
 type GenerationMode = "deterministic" | "ai" | "hybrid";
 
-const MSG_UNSAVED =
-  "Generated (not saved — open a project from the dashboard to persist designs).";
 const MSG_OFFLINE =
   "Engine offline — showing the built-in sample. Start the API with: npm run dev:api";
 const MSG_NOT_FOUND =
@@ -61,7 +63,6 @@ export function Workspace({
   const [storedId, setStoredId] = useState<string | null>(null);
   const [title, setTitle] = useState("Untitled project");
   const [generating, setGenerating] = useState(false);
-  const [notice, setNotice] = useState<string | undefined>(undefined);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [editBusy, setEditBusy] = useState(false);
   const [historyKey, setHistoryKey] = useState(0);
@@ -91,6 +92,9 @@ export function Workspace({
   const [selectedFurnitureId, setSelectedFurnitureId] = useState<string | null>(null);
   const [interiorBusy, setInteriorBusy] = useState(false);
 
+  // Chat conversation context sent back to the backend agent on every turn
+  const chatHistoryRef = useRef<ChatMessage[]>([]);
+
   useEffect(() => {
     getGenerationSettings()
       .then((s) => setAiAvailable(s.anthropic_configured || s.openai_configured))
@@ -118,74 +122,138 @@ export function Workspace({
             ? MSG_NOT_FOUND
             : MSG_OFFLINE;
         toast.error(msg, { duration: 6000 });
-        setNotice(msg);
       }
     })();
     return () => { cancelled = true; };
   }, [initialProjectId]);
 
-  const handleGenerate = useCallback(async () => {
-    setGenerating(true);
-    try {
-      const { project: design, summary } = await generateFromPrompt(
-        prompt,
-        generationMode,
-      );
-      setProject(design);
-      if (storedId) {
-        await updateProject(storedId, { prompt, project: design, change_type: "generate" });
-        setHistoryKey((k) => k + 1);
-        setNotice(`${summary} Saved.`);
-      } else {
-        setNotice(`${summary} ${MSG_UNSAVED}`);
+  // Lazily create the backend-stored project the first time it's needed —
+  // the chat panel works standalone until then, matching the local-first model.
+  const ensureStoredProject = useCallback(
+    async (nameHint: string): Promise<string> => {
+      if (storedId) return storedId;
+      const name = nameHint.trim().slice(0, 60) || "Untitled project";
+      const stored = await createProject({ name, prompt: nameHint });
+      setStoredId(stored.id);
+      setTitle(stored.name);
+      if (typeof window !== "undefined") {
+        window.history.replaceState(null, "", `/workspace?project=${stored.id}`);
       }
-    } catch {
-      setProject(MOCK_ARCHITECTURE_PROJECT);
-      setNotice(MSG_OFFLINE);
-      toast.error(MSG_OFFLINE, { duration: 6000 });
-    } finally {
-      setGenerating(false);
-    }
-  }, [storedId, prompt, generationMode]);
+      return stored.id;
+    },
+    [storedId],
+  );
 
-  const handleGenerateOptions = useCallback(async () => {
-    setShowOptions(true);
-    setOptionsLoading(true);
-    setDesignOptions(null);
-    setSelectedOptionId(null);
-    try {
-      const { options } = await generateOptions(prompt, generationMode);
-      setDesignOptions(options);
-      if (storedId) {
-        await updateProject(storedId, { options, change_type: "option" });
-        setHistoryKey((k) => k + 1);
+  const handleGenerateOptions = useCallback(
+    async (promptOverride?: string) => {
+      const text = promptOverride ?? prompt;
+      setShowOptions(true);
+      setOptionsLoading(true);
+      setDesignOptions(null);
+      setSelectedOptionId(null);
+      try {
+        const { options } = await generateOptions(text, generationMode);
+        setDesignOptions(options);
+        if (storedId) {
+          await updateProject(storedId, { prompt: text, options, change_type: "option" });
+          setHistoryKey((k) => k + 1);
+        }
+      } catch {
+        setShowOptions(false);
+        toast.error("Could not generate options — engine offline.", { duration: 5000 });
+      } finally {
+        setOptionsLoading(false);
       }
-    } catch {
-      setShowOptions(false);
-      toast.error("Could not generate options — engine offline.", { duration: 5000 });
-    } finally {
-      setOptionsLoading(false);
-    }
-  }, [prompt, generationMode, storedId]);
+    },
+    [prompt, generationMode, storedId],
+  );
 
   const handleApplyOption = useCallback(
     async (option: DesignOption) => {
       setSelectedOptionId(option.option_id);
       setProject(option.preview);
       const label = option.variant.charAt(0).toUpperCase() + option.variant.slice(1);
-      if (storedId) {
-        try {
-          await updateProject(storedId, { prompt, project: option.preview, change_type: "option" });
-          setHistoryKey((k) => k + 1);
-          toast.success(`${label} option applied and saved.`);
-        } catch {
-          toast.error("Option applied locally — engine offline, not saved.", { duration: 5000 });
-        }
-      } else {
-        toast.info(`${label} option applied. ${MSG_UNSAVED}`, { duration: 5000 });
+      try {
+        const id = await ensureStoredProject(prompt);
+        await updateProject(id, { prompt, project: option.preview, change_type: "option" });
+        setHistoryKey((k) => k + 1);
+        toast.success(`${label} option applied and saved.`);
+      } catch {
+        toast.error("Option applied locally — engine offline, not saved.", { duration: 5000 });
       }
     },
-    [storedId, prompt],
+    [prompt, ensureStoredProject],
+  );
+
+  // Every chat turn funnels through here. Before a design exists, a message
+  // runs the deterministic/AI/hybrid generation pipeline (so the mode toggle
+  // and validation apply); once a design exists, it runs the agentic chat
+  // tool loop so edits, MEP, BOQ, exports, etc. all keep working as before.
+  const handleChatSend = useCallback(
+    async (text: string, files: File[]): Promise<{ reply: string; toolCalls?: string[] }> => {
+      const trimmed = text.trim();
+      const wantsOptions =
+        !project &&
+        /compare option|show.*option|design option|compact.*balanced.*spacious/i.test(trimmed);
+
+      if (wantsOptions) {
+        setPrompt(trimmed);
+        await handleGenerateOptions(trimmed);
+        return {
+          reply:
+            "Generated three design options — compact, balanced, and spacious. Pick one above the canvas to continue.",
+          toolCalls: ["generate_design"],
+        };
+      }
+
+      if (!project) {
+        if (!trimmed) {
+          return {
+            reply: "I need a short description of the building to generate a first layout — try adding a sentence alongside the image.",
+          };
+        }
+        setPrompt(trimmed);
+        setGenerating(true);
+        try {
+          const id = await ensureStoredProject(trimmed);
+          const { project: design, summary, warnings } = await generateFromPrompt(trimmed, generationMode);
+          setProject(design);
+          await updateProject(id, { prompt: trimmed, project: design, change_type: "generate" });
+          setHistoryKey((k) => k + 1);
+
+          let attachNote = "";
+          if (files.length > 0) {
+            const uploaded = await Promise.allSettled(files.map((f) => uploadReference(id, f)));
+            const ok = uploaded.filter((r) => r.status === "fulfilled").length;
+            if (ok > 0) attachNote = ` Saved ${ok} reference image${ok > 1 ? "s" : ""} to the References panel.`;
+          }
+          const warnStr = warnings.length > 0 ? ` ${warnings.length} warning(s) — see the warnings panel.` : "";
+          return { reply: `${summary}${warnStr}${attachNote}`, toolCalls: ["generate_design"] };
+        } catch {
+          setProject(MOCK_ARCHITECTURE_PROJECT);
+          toast.error(MSG_OFFLINE, { duration: 6000 });
+          return { reply: MSG_OFFLINE };
+        } finally {
+          setGenerating(false);
+        }
+      }
+
+      const id = await ensureStoredProject(trimmed);
+      const images = files.length > 0 ? await Promise.all(files.map(fileToChatImage)) : [];
+      const resp = await sendChatMessage(id, trimmed, chatHistoryRef.current, images);
+      chatHistoryRef.current = [
+        ...chatHistoryRef.current,
+        { role: "user" as const, content: trimmed },
+        { role: "assistant" as const, content: resp.reply },
+      ].slice(-20);
+
+      if (resp.project) {
+        setProject(resp.project as ArchitectureProject);
+        setHistoryKey((k) => k + 1);
+      }
+      return { reply: resp.reply, toolCalls: resp.tool_calls };
+    },
+    [project, generationMode, ensureStoredProject, handleGenerateOptions],
   );
 
   const handleApplyChanges = useCallback(
@@ -460,15 +528,6 @@ export function Workspace({
     [storedId, project],
   );
 
-  // Stage 24.6 — chat tool call mutated the project; sync workspace state
-  const handleChatProjectUpdate = useCallback(
-    (updated: ArchitectureProject) => {
-      setProject(updated);
-      setHistoryKey((k) => k + 1);
-    },
-    [],
-  );
-
   const handleRename = useCallback(
     async (name: string) => {
       const next = name.trim();
@@ -492,19 +551,17 @@ export function Workspace({
   }
 
   return (
-    <div className="grid h-full grid-cols-1 gap-3 p-3 lg:grid-cols-[300px_minmax(0,1fr)_340px]">
-      <PromptPanel
-        prompt={prompt}
-        onPromptChange={setPrompt}
-        templateId={templateId}
-        onTemplateChange={handleTemplateChange}
-        onGenerate={() => void handleGenerate()}
-        onGenerateOptions={() => void handleGenerateOptions()}
+    <div className="grid h-full grid-cols-1 gap-3 p-3 lg:grid-cols-[320px_minmax(0,1fr)_340px]">
+      <ChatPanel
+        storedId={storedId}
+        project={project}
         generating={generating}
-        notice={notice}
-        mode={generationMode}
+        generationMode={generationMode}
         onModeChange={setGenerationMode}
         aiAvailable={aiAvailable}
+        templateId={templateId}
+        onTemplateChange={handleTemplateChange}
+        onSend={handleChatSend}
       />
 
       <div className="flex min-h-0 flex-col gap-3">
@@ -538,11 +595,6 @@ export function Workspace({
               if (!item) return;
               void handleEditInterior(item.room_id, { action: "move", item_id: itemId, x, y });
             }}
-          />
-          <ChatPanel
-            projectId={storedId}
-            project={project}
-            onProjectUpdate={handleChatProjectUpdate}
           />
         </div>
       </div>

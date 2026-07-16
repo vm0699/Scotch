@@ -51,7 +51,10 @@ def test_resolve_catalog_dims_does_not_mutate_shared_spec() -> None:
 
 
 def test_resolve_catalog_dims_passthrough_when_no_catalog_id() -> None:
-    spec = next(s for s in ROOM_FURNITURE["dining"] if s.type == "dining_table")
+    # "dining_table" used to be the uncataloged example here, but it's been
+    # catalog-linked since Stage 43.9 — "refrigerator" is kitchen's documented,
+    # still-uncataloged box-fallback item (no CC0 fridge model exists).
+    spec = next(s for s in ROOM_FURNITURE["kitchen"] if s.type == "refrigerator")
     assert spec.catalog_id is None
     resolved = _resolve_catalog_dims(spec)
     assert resolved is spec

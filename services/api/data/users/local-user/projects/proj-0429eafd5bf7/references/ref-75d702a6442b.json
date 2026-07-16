@@ -1,0 +1,26 @@
+{
+  "id": "ref-75d702a6442b",
+  "project_id": "proj-0429eafd5bf7",
+  "file_name": "test.png",
+  "file_path": "ref-75d702a6442b_test.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 58,
+  "reference_type": "existing_plan",
+  "scale_status": "calibrated",
+  "calibration": {
+    "p1_x": 0.0,
+    "p1_y": 0.0,
+    "p2_x": 200.0,
+    "p2_y": 0.0,
+    "known_distance_ft": 10.0,
+    "pixels_per_foot": 20.0,
+    "origin_x_ft": 0.0,
+    "origin_y_ft": 0.0
+  },
+  "extracted_entities": [],
+  "needs_review": true,
+  "linked_project_objects": [],
+  "notes": "",
+  "created_at": "2026-07-13T09:29:12.418996Z",
+  "updated_at": "2026-07-13T09:29:12.445718Z"
+}

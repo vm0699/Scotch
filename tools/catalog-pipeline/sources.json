@@ -1,5 +1,5 @@
 {
-  "room_type": "bedroom + master bedroom + living room + kitchen + dining + study + foyer + balcony + bathroom",
+  "room_type": "bedroom + master bedroom + living room + seating + kitchen + kitchenette + dining + study + foyer + balcony + storage + bathroom + restroom + office + cafe seating + cafe counter",
   "items": [
     {
       "id": "bed_single_frame",

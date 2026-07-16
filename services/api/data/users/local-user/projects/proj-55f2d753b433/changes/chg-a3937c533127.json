@@ -1,0 +1,116 @@
+{
+  "id": "chg-a3937c533127",
+  "request_text": "client asked to add a puja room near entrance",
+  "source": "client",
+  "status": "pending",
+  "priority": "medium",
+  "created_at": "2026-07-13T09:36:57.433974Z",
+  "updated_at": "2026-07-13T09:36:57.436449Z",
+  "affected_modules": [
+    "exports",
+    "details",
+    "boq",
+    "rooms",
+    "mep",
+    "plugins",
+    "compliance"
+  ],
+  "before_version": null,
+  "after_version": null,
+  "summary": "Adding None — 1 actions, 8 warnings across 10 items.",
+  "cost_impact": "Est. area-dependent; recalculate BOQ",
+  "drawing_impact": [],
+  "mep_impact": [],
+  "detail_impact": [],
+  "export_impact": [],
+  "affected_items": {
+    "change_id": "chg-a3937c533127",
+    "rooms": [
+      {
+        "module": "rooms",
+        "object_id": null,
+        "description": "New room will be added to the floor plan",
+        "severity": "action_needed",
+        "action": "Regenerate floor plan with new room"
+      }
+    ],
+    "mep": [
+      {
+        "module": "mep",
+        "object_id": null,
+        "description": "MEP plan is stale — new room not covered",
+        "severity": "warning",
+        "action": "Re-run MEP generation"
+      }
+    ],
+    "boq": [
+      {
+        "module": "boq",
+        "object_id": null,
+        "description": "BOQ is stale — new room adds floor tile, paint, and opening quantities",
+        "severity": "warning",
+        "action": "Recalculate BOQ"
+      }
+    ],
+    "compliance": [
+      {
+        "module": "compliance",
+        "object_id": null,
+        "description": "Coverage currently 21.3% — new room may exceed NBC/CMDA limit",
+        "severity": "warning",
+        "action": "Recheck compliance after change"
+      }
+    ],
+    "details": [
+      {
+        "module": "details",
+        "object_id": "det-toilet-bath-1",
+        "description": "Detail 'WC Detail — Common Bath' may need review after floor plan change",
+        "severity": "info",
+        "action": "Verify detail is still current"
+      }
+    ],
+    "exports": [
+      {
+        "module": "exports",
+        "object_id": null,
+        "description": "All drawing exports (DXF, SVG, PDF, IFC) are stale after design change",
+        "severity": "warning",
+        "action": "Re-export after change is applied"
+      },
+      {
+        "module": "exports",
+        "object_id": null,
+        "description": "3D exports (SketchUp .rb, Blender .py, GLTF) need re-generation",
+        "severity": "warning",
+        "action": "Re-export 3D model after change"
+      },
+      {
+        "module": "exports",
+        "object_id": null,
+        "description": "Presentation sheets (SVG/PDF) show outdated floor plan",
+        "severity": "warning",
+        "action": "Re-export presentation sheets"
+      }
+    ],
+    "plugins": [
+      {
+        "module": "plugins",
+        "object_id": null,
+        "description": "Revit model is out of sync — run Revit add-in sync to pull changes",
+        "severity": "warning",
+        "action": "Use Revit › Scotch › Sync › Pull"
+      },
+      {
+        "module": "plugins",
+        "object_id": null,
+        "description": "SketchUp model is out of sync — re-import updated .rb script",
+        "severity": "warning",
+        "action": "Download new SketchUp script and run in Ruby Console"
+      }
+    ],
+    "total_count": 10,
+    "summary": "Adding None — 1 actions, 8 warnings across 10 items.",
+    "cost_impact": "Est. area-dependent; recalculate BOQ"
+  }
+}

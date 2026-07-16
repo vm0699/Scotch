@@ -565,6 +565,25 @@ export interface ChatMessage {
   content: string;
 }
 
+export interface ChatImage {
+  media_type: string;
+  data: string; // base64, no "data:" prefix
+}
+
+/** Read an image File into a base64 ChatImage payload for the chat vision endpoint. */
+export function fileToChatImage(file: File): Promise<ChatImage> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const base64 = result.slice(result.indexOf(",") + 1);
+      resolve({ media_type: file.type || "image/png", data: base64 });
+    };
+    reader.onerror = () => reject(reader.error ?? new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+}
+
 export interface ChatResponse {
   reply: string;
   project: ArchitectureProject | null;
@@ -575,10 +594,12 @@ export function sendChatMessage(
   projectId: string,
   message: string,
   history: ChatMessage[] = [],
+  images: ChatImage[] = [],
 ): Promise<ChatResponse> {
   return apiRequest<ChatResponse>("POST", `/projects/${projectId}/chat`, {
     message,
     history,
+    images,
   });
 }
 
